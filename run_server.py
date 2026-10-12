@@ -6,15 +6,28 @@ import shutil
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, 'public')
 
-# Find PHP executable
+# Find PHP executable across common Windows environments
 php_exe = shutil.which('php')
 if not php_exe:
-    # Check default winget location
-    winget_php = r"C:\Users\User\AppData\Local\Microsoft\WinGet\Packages\PHP.PHP.8.3_Microsoft.Winget.Source_8wekyb3d8bbwe\php.exe"
-    if os.path.exists(winget_php):
-        php_exe = winget_php
-    else:
-        sys.exit("Error: PHP executable not found. Please install PHP or add it to PATH.")
+    candidates = [
+        r"C:\xampp\php\php.exe",
+        r"C:\php\php.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages\PHP.PHP.8.3_Microsoft.Winget.Source_8wekyb3d8bbwe\php.exe"),
+        os.path.expandvars(r"%ProgramFiles%\PHP\php.exe"),
+    ]
+    for cand in candidates:
+        if os.path.exists(cand):
+            php_exe = cand
+            break
+
+if not php_exe:
+    sys.exit(
+        "Error: PHP executable not found.\n"
+        "Please ensure PHP 8.0+ is installed:\n"
+        "  - If using XAMPP, PHP is located at C:\\xampp\\php\\php.exe\n"
+        "  - Or install via winget: 'winget install PHP.PHP.8.3'\n"
+        "  - Or download from https://windows.php.net/download/ and add to PATH."
+    )
 
 print("=" * 65)
 print(" SECUREFACULTY: SYSTEMATIC RECORDS MANAGEMENT PORTAL")
