@@ -101,6 +101,17 @@ CREATE TABLE IF NOT EXISTS `processing_batches` (
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 8. Performance & Query Acceleration Indexes
+CREATE INDEX IF NOT EXISTS `idx_certificates_faculty` ON `certificates`(`faculty_id`);
+CREATE INDEX IF NOT EXISTS `idx_certificates_hash` ON `certificates`(`file_hash`);
+CREATE INDEX IF NOT EXISTS `idx_certificates_date` ON `certificates`(`date_issued`);
+CREATE INDEX IF NOT EXISTS `idx_cert_authors_cert` ON `certificate_authors`(`certificate_id`);
+CREATE INDEX IF NOT EXISTS `idx_cert_authors_user` ON `certificate_authors`(`user_id`);
+CREATE INDEX IF NOT EXISTS `idx_audit_created` ON `audit_logs`(`created_at`);
+CREATE INDEX IF NOT EXISTS `idx_audit_action` ON `audit_logs`(`action`);
+CREATE INDEX IF NOT EXISTS `idx_audit_user` ON `audit_logs`(`user_id`);
+CREATE INDEX IF NOT EXISTS `idx_audit_ip` ON `audit_logs`(`ip_address`);
+
 -- Initial API Quota Seed
 INSERT INTO `api_quotas` (`service_name`, `monthly_limit`, `current_usage`, `month_year`)
 VALUES ('OCR_SPACE', 25000, 142, DATE_FORMAT(NOW(), '%Y-%m'))

@@ -123,6 +123,16 @@ class Database {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE INDEX IF NOT EXISTS idx_certificates_faculty ON certificates(faculty_id);
+            CREATE INDEX IF NOT EXISTS idx_certificates_hash ON certificates(file_hash);
+            CREATE INDEX IF NOT EXISTS idx_certificates_date ON certificates(date_issued);
+            CREATE INDEX IF NOT EXISTS idx_cert_authors_cert ON certificate_authors(certificate_id);
+            CREATE INDEX IF NOT EXISTS idx_cert_authors_user ON certificate_authors(user_id);
+            CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at);
+            CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action);
+            CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
+            CREATE INDEX IF NOT EXISTS idx_audit_ip ON audit_logs(ip_address);
         ");
 
         // Dynamic safe migrations for SQLite
@@ -145,6 +155,18 @@ class Database {
             if (!in_array('batch_id', $certCols)) {
                 $pdo->exec("ALTER TABLE certificates ADD COLUMN batch_id TEXT;");
             }
+
+            // Ensure indexes are established in SQLite
+            $pdo->exec("
+                CREATE INDEX IF NOT EXISTS idx_certificates_faculty ON certificates(faculty_id);
+                CREATE INDEX IF NOT EXISTS idx_certificates_hash ON certificates(file_hash);
+                CREATE INDEX IF NOT EXISTS idx_certificates_date ON certificates(date_issued);
+                CREATE INDEX IF NOT EXISTS idx_cert_authors_cert ON certificate_authors(certificate_id);
+                CREATE INDEX IF NOT EXISTS idx_cert_authors_user ON certificate_authors(user_id);
+                CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at);
+                CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action);
+                CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
+            ");
         }
 
         // Seed API quota row if not exists

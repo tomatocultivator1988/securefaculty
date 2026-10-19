@@ -17,30 +17,19 @@ class AuditController extends BaseController {
         $page = max(1, (int)($_GET['page'] ?? 1));
         $perPage = 15;
 
-        // Get logs for stats and display
-        $allLogs = AuditLogger::getRecentLogs(500, null);
-        $filteredLogs = AuditLogger::getRecentLogs(500, $actionFilter);
+        // True database-driven pagination across all historical records
+        $logData = AuditLogger::getPaginatedLogs($search, $actionFilter, $page, $perPage);
+        $displayLogs = $logData['rows'];
+        $totalLogs = $logData['totalRows'];
+        $totalPages = $logData['totalPages'];
+        $page = $logData['currentPage'];
 
-        if (!empty($search)) {
-            $filteredLogs = array_filter($filteredLogs, function($l) use ($search) {
-                $searchLower = strtolower($search);
-                return str_contains(strtolower($l['created_at']), $searchLower)
-                    || str_contains(strtolower($l['username']), $searchLower)
-                    || str_contains(strtolower($l['action']), $searchLower)
-                    || str_contains(strtolower($l['details']), $searchLower)
-                    || str_contains(strtolower($l['ip_address']), $searchLower);
-            });
-        }
-
-        $totalLogs = count($filteredLogs);
-        $totalPages = max(1, ceil($totalLogs / $perPage));
-        $page = min($page, $totalPages);
-        $displayLogs = array_slice($filteredLogs, ($page - 1) * $perPage, $perPage);
-
-        $statTotal = count($allLogs);
-        $statLogins = count(array_filter($allLogs, fn($l) => in_array($l['action'], ['LOGIN_SUCCESS', 'LOGOUT'])));
-        $statDocs = count(array_filter($allLogs, fn($l) => in_array($l['action'], ['ARCHIVE_DOCUMENT','DELETE_DOCUMENT','VIEW_DOCUMENT','DOWNLOAD_DOCUMENT','OCR_EXTRACT'])));
-        $statAlerts = count(array_filter($allLogs, fn($l) => $l['action'] === 'LOGIN_FAILED'));
+        // Comprehensive statistical counters across full ledger
+        $pdo = Database::getConnection();
+        $statTotal = (int)$pdo->query("SELECT COUNT(*) FROM audit_logs")->fetchColumn();
+        $statLogins = (int)$pdo->query("SELECT COUNT(*) FROM audit_logs WHERE action IN ('LOGIN_SUCCESS', 'LOGOUT')")->fetchColumn();
+        $statDocs = (int)$pdo->query("SELECT COUNT(*) FROM audit_logs WHERE action IN ('ARCHIVE_DOCUMENT','DELETE_DOCUMENT','VIEW_DOCUMENT','DOWNLOAD_DOCUMENT','OCR_EXTRACT','COMMIT_VAULT_RECORD','BULK_DELETE_DOCUMENTS')")->fetchColumn();
+        $statAlerts = (int)$pdo->query("SELECT COUNT(*) FROM audit_logs WHERE action IN ('LOGIN_FAILED','UNAUTHORIZED_ACCESS_ATTEMPT','LOGIN_BLOCKED','CSRF_VIOLATION_BLOCKED')")->fetchColumn();
 
         $facultyLookup = UserModel::getFacultyLookup();
 

@@ -96,47 +96,56 @@ class CertificateDAO implements CertificateDAOInterface {
 
     public static function create(array $data, array $coAuthorIds = []): int {
         $pdo = Database::getConnection();
+        $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare("
-            INSERT INTO certificates (
-                faculty_id, title, issuer, date_issued, category,
-                file_path, original_filename, file_type, file_size,
-                ocr_raw_text, ocr_confidence, status,
-                file_hash, cert_number, processing_status, batch_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
+        try {
+            $stmt = $pdo->prepare("
+                INSERT INTO certificates (
+                    faculty_id, title, issuer, date_issued, category,
+                    file_path, original_filename, file_type, file_size,
+                    ocr_raw_text, ocr_confidence, status,
+                    file_hash, cert_number, processing_status, batch_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
 
-        $stmt->execute([
-            $data['faculty_id'],
-            $data['title'],
-            $data['issuer'] ?? 'Not Specified',
-            $data['date_issued'] ?? null,
-            $data['category'] ?? 'Seminar',
-            $data['file_path'],
-            $data['original_filename'],
-            $data['file_type'],
-            $data['file_size'],
-            $data['ocr_raw_text'] ?? '',
-            $data['ocr_confidence'] ?? 0.95,
-            $data['status'] ?? 'approved',
-            $data['file_hash'] ?? null,
-            $data['cert_number'] ?? null,
-            $data['processing_status'] ?? 'completed',
-            $data['batch_id'] ?? null
-        ]);
+            $stmt->execute([
+                $data['faculty_id'],
+                $data['title'],
+                $data['issuer'] ?? 'Not Specified',
+                $data['date_issued'] ?? null,
+                $data['category'] ?? 'Seminar',
+                $data['file_path'],
+                $data['original_filename'],
+                $data['file_type'],
+                $data['file_size'],
+                $data['ocr_raw_text'] ?? '',
+                $data['ocr_confidence'] ?? 0.95,
+                $data['status'] ?? 'approved',
+                $data['file_hash'] ?? null,
+                $data['cert_number'] ?? null,
+                $data['processing_status'] ?? 'completed',
+                $data['batch_id'] ?? null
+            ]);
 
-        $certId = (int)$pdo->lastInsertId();
+            $certId = (int)$pdo->lastInsertId();
 
-        $authorStmt = $pdo->prepare("INSERT INTO certificate_authors (certificate_id, user_id) VALUES (?, ?)");
-        $authorStmt->execute([$certId, $data['faculty_id']]);
+            $authorStmt = $pdo->prepare("INSERT INTO certificate_authors (certificate_id, user_id) VALUES (?, ?)");
+            $authorStmt->execute([$certId, $data['faculty_id']]);
 
-        foreach ($coAuthorIds as $coId) {
-            if ($coId != $data['faculty_id']) {
-                $authorStmt->execute([$certId, (int)$coId]);
+            foreach ($coAuthorIds as $coId) {
+                if ($coId != $data['faculty_id']) {
+                    $authorStmt->execute([$certId, (int)$coId]);
+                }
             }
-        }
 
-        return $certId;
+            $pdo->commit();
+            return $certId;
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public static function createBatch(array $batchData): void {
@@ -243,8 +252,9 @@ class CertificateDAO implements CertificateDAOInterface {
         $params = [];
 
         if ($facultyId) {
-            $sql .= " AND c.faculty_id = :faculty_id";
+            $sql .= " AND (c.faculty_id = :faculty_id OR c.id IN (SELECT certificate_id FROM certificate_authors WHERE user_id = :faculty_author_id))";
             $params[':faculty_id'] = $facultyId;
+            $params[':faculty_author_id'] = $facultyId;
         }
 
         if ($category && $category !== 'All') {
@@ -289,11 +299,21 @@ class CertificateDAO implements CertificateDAOInterface {
 
         // Case 1: Dean or Primary Certificate Owner (Full Cryptographic Purge)
         if ($isDean || (int)$cert['faculty_id'] === $requestingUserId) {
-            $delAuthors = $pdo->prepare("DELETE FROM certificate_authors WHERE certificate_id = ?");
-            $delAuthors->execute([$id]);
+            $pdo->beginTransaction();
+            try {
+                $delAuthors = $pdo->prepare("DELETE FROM certificate_authors WHERE certificate_id = ?");
+                $delAuthors->execute([$id]);
 
-            $stmt = $pdo->prepare("DELETE FROM certificates WHERE id = ?");
-            $stmt->execute([$id]);
+                $stmt = $pdo->prepare("DELETE FROM certificates WHERE id = ?");
+                $stmt->execute([$id]);
+
+                $pdo->commit();
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                return false;
+            }
 
             $refStmt = $pdo->prepare("SELECT COUNT(*) FROM certificates WHERE file_path = ? AND id != ?");
             $refStmt->execute([$cert['file_path'], $id]);

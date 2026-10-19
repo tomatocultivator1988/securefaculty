@@ -30,9 +30,10 @@ define('DB_NAME', 'securefaculty_db');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
-// Cryptographic Security (AES-256-CBC)
-// In production, keep this key in a secure environment variable or outside webroot
-define('AES_KEY_HEX', 'a4f89d38c114e590f23b7829a9041be5e8f49d21798ec4e1f8d48e89b2c3a501');
+// Cryptographic Security (AES-256)
+// Key resolution priority: Environment variable SECUREFACULTY_MASTER_KEY -> config constant default
+$envMasterKey = getenv('SECUREFACULTY_MASTER_KEY') ?: ($_ENV['SECUREFACULTY_MASTER_KEY'] ?? null);
+define('AES_KEY_HEX', $envMasterKey ?: 'a4f89d38c114e590f23b7829a9041be5e8f49d21798ec4e1f8d48e89b2c3a501');
 define('AES_CIPHER', 'aes-256-cbc');
 
 // OCR.space API Configuration

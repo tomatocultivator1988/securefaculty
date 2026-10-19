@@ -12,10 +12,10 @@ require_once __DIR__ . '/../layouts/layout_start.php';
 ?>
 
 <!-- Title Banner -->
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
     <div>
-        <h1 class="text-lg font-extrabold text-slate-900 tracking-tight">User & Access Management</h1>
-        <p class="text-xs text-slate-500 mt-0.5">
+        <h1 class="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">User & Access Management</h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Role-Based Access Control (RBAC) &bull; Account Provisioning &bull; RA 10173 Identity Governance
         </p>
     </div>
@@ -177,20 +177,20 @@ require_once __DIR__ . '/../layouts/layout_start.php';
 
                             <td class="p-3 text-right">
                                 <div class="inline-flex items-center gap-1.5">
-                                    <button type="button" onclick='openEditUserModal(<?= json_encode($u) ?>)'
+                                    <button type="button" onclick="openEditUserModal(<?= htmlspecialchars(json_encode($u), ENT_QUOTES, 'UTF-8') ?>)"
                                             class="p-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs transition-all cursor-pointer"
                                             title="Edit Profile">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
 
-                                    <button type="button" onclick="openResetPasswordModal(<?= $u['id'] ?>, '<?= addslashes(htmlspecialchars($u['full_name'])) ?>')"
+                                    <button type="button" onclick="openResetPasswordModal(<?= (int)$u['id'] ?>, <?= htmlspecialchars(json_encode($u['full_name']), ENT_QUOTES, 'UTF-8') ?>)"
                                             class="p-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 text-xs transition-all cursor-pointer"
                                             title="Reset Security Password">
                                         <i class="fa-solid fa-key"></i>
                                     </button>
 
                                     <?php if (!$isSelf): ?>
-                                        <button type="button" onclick="toggleUserStatus(<?= $u['id'] ?>, '<?= addslashes(htmlspecialchars($u['full_name'])) ?>', <?= $isActive ? 'true' : 'false' ?>)"
+                                        <button type="button" onclick="toggleUserStatus(<?= (int)$u['id'] ?>, <?= htmlspecialchars(json_encode($u['full_name']), ENT_QUOTES, 'UTF-8') ?>, <?= $isActive ? 'true' : 'false' ?>)"
                                                 class="p-1.5 rounded <?= $isActive ? 'hover:bg-rose-100 dark:hover:bg-rose-950/60 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400' : 'hover:bg-emerald-100 dark:hover:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' ?> text-xs transition-all cursor-pointer"
                                                 title="<?= $isActive ? 'Suspend User Access' : 'Reactivate User Access' ?>">
                                             <i class="fa-solid <?= $isActive ? 'fa-user-slash' : 'fa-user-check' ?>"></i>

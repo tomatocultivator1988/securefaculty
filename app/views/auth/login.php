@@ -125,6 +125,11 @@ $msg = $msg ?? null;
                         <i class="fa-solid fa-user-slash text-amber-600"></i>
                         <span>Account Access Suspended: This faculty account has been deactivated by the Dean.</span>
                     </div>
+                <?php elseif ($error === 'rate_limited'): ?>
+                    <div class="mb-4 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-rose-500"></i>
+                        <span>Security Lockout: Multiple failed login attempts detected. Access is temporarily paused for 5 minutes to protect account credentials.</span>
+                    </div>
                 <?php elseif ($error === 'empty_fields'): ?>
                     <div class="mb-4 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
                         <i class="fa-solid fa-circle-exclamation text-rose-500"></i>

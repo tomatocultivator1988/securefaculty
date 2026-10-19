@@ -54,6 +54,15 @@ class AuthController extends BaseController {
         } else {
             $err = $_SESSION['login_error'] ?? 'invalid_credentials';
             unset($_SESSION['login_error']);
+            if ($err === 'rate_limited') {
+                http_response_code(429);
+                header('Retry-After: 300');
+                $this->renderView('auth/login.php', [
+                    'error' => 'rate_limited',
+                    'msg' => null
+                ]);
+                return;
+            }
             $this->redirect('index.php?error=' . urlencode($err));
         }
     }

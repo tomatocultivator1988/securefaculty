@@ -16,8 +16,8 @@ class UserDAO implements UserDAOInterface {
             SELECT u.id, u.username, u.role, u.full_name, u.email, u.department, u.created_at,
                    COALESCE(u.is_active, 1) as is_active,
                    fp.employee_id, fp.academic_rank, fp.specialization,
-                   (SELECT COUNT(*) FROM certificates WHERE faculty_id = u.id) as cert_count,
-                   (SELECT COUNT(*) FROM certificates WHERE faculty_id = u.id) as certificate_count
+                   (SELECT COUNT(DISTINCT c.id) FROM certificates c LEFT JOIN certificate_authors ca ON c.id = ca.certificate_id WHERE c.faculty_id = u.id OR ca.user_id = u.id) as cert_count,
+                   (SELECT COUNT(DISTINCT c.id) FROM certificates c LEFT JOIN certificate_authors ca ON c.id = ca.certificate_id WHERE c.faculty_id = u.id OR ca.user_id = u.id) as certificate_count
             FROM users u
             LEFT JOIN faculty_profiles fp ON u.id = fp.user_id
             ORDER BY u.role DESC, u.full_name ASC

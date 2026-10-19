@@ -317,15 +317,26 @@ def process_document(file_path, api_key="helloworld"):
                     if len(reader.pages) > 0 and len(reader.pages[0].images) > 0:
                         first_img = reader.pages[0].images[0]
                         img_path = os.path.splitext(file_path)[0] + "_page1.png"
-                        with open(img_path, "wb") as fp:
-                            fp.write(first_img.data)
-                        optimized_path = optimize_image(img_path)
-                        # Call OCR API
-                        ocr_text, err = call_ocr_space_api(optimized_path, api_key)
-                        if ocr_text:
-                            raw_text = ocr_text
-                            ocr_used = True
-                            quota_consumed = 1
+                        try:
+                            with open(img_path, "wb") as fp:
+                                fp.write(first_img.data)
+                            opt_path = optimize_image(img_path)
+                            ocr_text, err = call_ocr_space_api(opt_path, api_key)
+                            if ocr_text:
+                                raw_text = ocr_text
+                                ocr_used = True
+                                quota_consumed = 1
+                            if opt_path != img_path and os.path.exists(opt_path):
+                                try:
+                                    os.remove(opt_path)
+                                except Exception:
+                                    pass
+                        finally:
+                            if os.path.exists(img_path):
+                                try:
+                                    os.remove(img_path)
+                                except Exception:
+                                    pass
             except Exception as e:
                 return {"status": "error", "message": f"PDF parsing failed: {e}"}
         else:
@@ -335,6 +346,11 @@ def process_document(file_path, api_key="helloworld"):
     elif ext in ('.jpg', '.jpeg', '.png'):
         optimized_path = optimize_image(file_path)
         ocr_text, err = call_ocr_space_api(optimized_path, api_key)
+        if optimized_path != file_path and os.path.exists(optimized_path):
+            try:
+                os.remove(optimized_path)
+            except Exception:
+                pass
         if ocr_text:
             raw_text = ocr_text
             ocr_used = True

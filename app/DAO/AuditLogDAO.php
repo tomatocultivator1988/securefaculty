@@ -40,30 +40,52 @@ class AuditLogDAO implements AuditLogDAOInterface {
 
     public static function getPaginatedLogs(?string $search = null, ?string $actionFilter = null, int $page = 1, int $perPage = 10): array {
         $pdo = Database::getConnection();
+        
+        $countQuery = "
+            SELECT COUNT(*)
+            FROM audit_logs a
+            WHERE 1=1
+        ";
+        $params = [];
+        if ($search && trim($search) !== '') {
+            $countQuery .= " AND (a.details LIKE :s OR a.username LIKE :s OR a.ip_address LIKE :s OR a.action LIKE :s)";
+            $params[':s'] = "%" . trim($search) . "%";
+        }
+        if ($actionFilter && trim($actionFilter) !== '') {
+            $countQuery .= " AND a.action = :act";
+            $params[':act'] = trim($actionFilter);
+        }
+
+        $countStmt = $pdo->prepare($countQuery);
+        $countStmt->execute($params);
+        $totalRows = (int)$countStmt->fetchColumn();
+
+        $totalPages = max(1, (int)ceil($totalRows / $perPage));
+        $page = max(1, min($page, $totalPages));
+        $offset = ($page - 1) * $perPage;
+
         $logQuery = "
             SELECT a.*, COALESCE(u.full_name, 'Departmental Audit') as faculty_display
             FROM audit_logs a
             LEFT JOIN users u ON a.target_id = u.id
             WHERE 1=1
         ";
-        $params = [];
-        if ($search) {
+        if ($search && trim($search) !== '') {
             $logQuery .= " AND (a.details LIKE :s OR a.username LIKE :s OR a.ip_address LIKE :s OR a.action LIKE :s)";
-            $params[':s'] = "%$search%";
         }
-        if ($actionFilter) {
+        if ($actionFilter && trim($actionFilter) !== '') {
             $logQuery .= " AND a.action = :act";
-            $params[':act'] = $actionFilter;
         }
-        $logQuery .= " ORDER BY a.created_at DESC";
-        $stmt = $pdo->prepare($logQuery);
-        $stmt->execute($params);
-        $allRows = $stmt->fetchAll();
+        $logQuery .= " ORDER BY a.created_at DESC LIMIT :limit OFFSET :offset";
 
-        $totalRows = count($allRows);
-        $totalPages = max(1, ceil($totalRows / $perPage));
-        $page = min($page, $totalPages);
-        $displayRows = !empty($allRows) ? array_slice($allRows, ($page - 1) * $perPage, $perPage) : [];
+        $stmt = $pdo->prepare($logQuery);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $displayRows = $stmt->fetchAll();
 
         return [
             'rows' => $displayRows,

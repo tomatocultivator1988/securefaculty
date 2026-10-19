@@ -58,7 +58,7 @@
 
                 <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/80">
                     <span class="font-semibold text-slate-700 dark:text-slate-200 block">Database Engine:</span>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">SQLite Active (<code class="text-blue-600 dark:text-blue-400 font-mono">database.sqlite</code>). Dual-compatible with MySQL.</p>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5"><?= DB_DRIVER === 'sqlite' ? 'SQLite Active (<code class="text-blue-600 dark:text-blue-400 font-mono">securefaculty.sqlite</code>)' : 'MySQL Production Engine (' . htmlspecialchars(DB_NAME) . ')' ?>. Dual-compatible architecture.</p>
                 </div>
 
                 <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/80">

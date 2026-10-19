@@ -331,6 +331,9 @@ class UploadController extends BaseController {
             ? (int)($input['assigned_faculty_id'] ?? $input['faculty_id'])
             : $currentUser['id'];
 
+        // Normalize authentic certificate date
+        $normalizedDate = !empty($input['date_issued']) ? CertificateModel::normalizeDate($input['date_issued']) : null;
+
         // Strict Duplicate Pre-Commit Interception (OWASP A04 / Integrity Assurance)
         $forceDuplicate = !empty($input['force_duplicate']);
         if (!$forceDuplicate) {
@@ -341,8 +344,6 @@ class UploadController extends BaseController {
                     'message' => "Policy Intercept: An identical file already exists in the institutional vault: '{$existing['title']}' (Vault ID #{$existing['id']}). If you intend to archive this as an alternate version, check the override checkbox in the form."
                 ], 409);
             }
-
-            $normalizedDate = !empty($input['date_issued']) ? CertificateModel::normalizeDate($input['date_issued']) : null;
 
             if (!empty($input['title']) && $normalizedDate !== null) {
                 $sameRecord = CertificateModel::findDuplicateByTitleAndDate($assignedFacultyId, trim($input['title']), $normalizedDate);
@@ -362,7 +363,15 @@ class UploadController extends BaseController {
             $this->jsonResponse(['status' => 'error', 'message' => 'Cryptographic Failure: AES-256 encryption operation failed'], 500);
         }
 
+        // Clean up temporary plaintext staged file and intermediate derivatives (Zero Plaintext Persistence)
         @unlink($tempFilePath);
+        $baseTempName = pathinfo($tempFilePath, PATHINFO_FILENAME);
+        foreach (['_opt.jpg', '_page1.png', '_opt.png', '_compiled.pdf'] as $deriv) {
+            $derivPath = TEMP_DIR . DIRECTORY_SEPARATOR . $baseTempName . $deriv;
+            if (file_exists($derivPath)) {
+                @unlink($derivPath);
+            }
+        }
 
         $coAuthorIds = [];
         if (!empty($input['co_authors']) && is_array($input['co_authors'])) {

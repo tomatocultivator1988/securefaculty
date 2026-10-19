@@ -10,9 +10,15 @@ require_once __DIR__ . '/../Services/AuditLogger.php';
 require_once __DIR__ . '/../Interfaces/AuthServiceInterface.php';
 
 class AuthService implements AuthServiceInterface {
+    private static ?bool $cachedCheckResult = null;
+    private static ?int $cachedUserId = null;
+
     public static function initSession(): void {
         if (!headers_sent() && session_status() === PHP_SESSION_NONE) {
-            $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+            $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+                || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+
             session_set_cookie_params([
                 'lifetime' => 0,
                 'path' => '/',
@@ -43,8 +49,41 @@ class AuthService implements AuthServiceInterface {
 
     public static function attempt(string $username, string $password): bool {
         self::initSession();
-        $pdo = Database::getConnection();
+        self::$cachedCheckResult = null;
+        self::$cachedUserId = null;
 
+        $now = time();
+        $throttle = $_SESSION['login_throttle'] ?? ['count' => 0, 'last_time' => $now, 'locked_until' => 0];
+
+        // Check active lockout (5-minute pause after 5 consecutive failures)
+        if (!empty($throttle['locked_until']) && $throttle['locked_until'] > $now) {
+            $remaining = $throttle['locked_until'] - $now;
+            AuditLogger::log('LOGIN_RATE_LIMITED', "Rate limited login attempt for: " . htmlspecialchars($username) . " ({$remaining}s remaining)");
+            $_SESSION['login_error'] = 'rate_limited';
+            return false;
+        }
+
+        // Reset throttle window if 5 minutes have elapsed since last attempt
+        if ($now - ($throttle['last_time'] ?? 0) > 300) {
+            $throttle = ['count' => 0, 'last_time' => $now, 'locked_until' => 0];
+        }
+
+        // Check username-targeted brute-force threshold (5 failures within 5 minutes)
+        $pdo = Database::getConnection();
+        try {
+            $fiveMinsAgo = date('Y-m-d H:i:s', $now - 300);
+            $userPattern = '%username: ' . trim($username) . '%';
+            $stmtUser = $pdo->prepare("SELECT COUNT(*) FROM audit_logs WHERE action IN ('LOGIN_FAILED', 'LOGIN_RATE_LIMITED', 'BRUTE_FORCE_LOCKOUT') AND details LIKE ? AND created_at >= ?");
+            $stmtUser->execute([$userPattern, $fiveMinsAgo]);
+            $userFailCount = (int)$stmtUser->fetchColumn();
+            if ($userFailCount >= 5) {
+                AuditLogger::log('LOGIN_RATE_LIMITED', "Target account brute-force protection engaged ({$userFailCount} failures in 5m): " . htmlspecialchars($username));
+                $_SESSION['login_error'] = 'rate_limited';
+                return false;
+            }
+        } catch (Exception $e) {
+            // Non-blocking fallback
+        }
         $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
         $stmt->execute([trim($username)]);
         $user = $stmt->fetch();
@@ -69,12 +108,26 @@ class AuthService implements AuthServiceInterface {
             // Generate fresh CSRF token
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
+            // Clear throttle on successful login
+            unset($_SESSION['login_throttle']);
+
             AuditLogger::log('LOGIN_SUCCESS', 'Successful One-Gate authentication as ' . $user['role'], $user['id']);
             return true;
         }
 
-        AuditLogger::log('LOGIN_FAILED', 'Failed login attempt for username: ' . htmlspecialchars($username));
-        $_SESSION['login_error'] = 'invalid_credentials';
+        // Increment throttle counter
+        $throttle['count'] = ($throttle['count'] ?? 0) + 1;
+        $throttle['last_time'] = $now;
+        if ($throttle['count'] >= 5) {
+            $throttle['locked_until'] = $now + 300;
+            AuditLogger::log('BRUTE_FORCE_LOCKOUT', "Security pause engaged (5 minutes) after 5 failed logins for: " . htmlspecialchars($username));
+            $_SESSION['login_error'] = 'rate_limited';
+        } else {
+            AuditLogger::log('LOGIN_FAILED', 'Failed login attempt for username: ' . htmlspecialchars($username));
+            $_SESSION['login_error'] = 'invalid_credentials';
+        }
+        $_SESSION['login_throttle'] = $throttle;
+
         return false;
     }
 
@@ -84,23 +137,34 @@ class AuthService implements AuthServiceInterface {
             return false;
         }
 
+        $userId = (int)$_SESSION['user_id'];
+        if (self::$cachedCheckResult !== null && self::$cachedUserId === $userId) {
+            return self::$cachedCheckResult;
+        }
+
         // Real-Time Account Deactivation Check (OWASP A01)
         try {
             $pdo = Database::getConnection();
             $stmt = $pdo->prepare("SELECT is_active FROM users WHERE id = ? LIMIT 1");
-            $stmt->execute([(int)$_SESSION['user_id']]);
+            $stmt->execute([$userId]);
             $status = $stmt->fetchColumn();
 
             if ($status === false || (int)$status === 0) {
+                self::$cachedCheckResult = false;
+                self::$cachedUserId = $userId;
                 self::logout();
                 return false;
             }
         } catch (Exception $e) {
             if (isset($_SESSION['is_active']) && (int)$_SESSION['is_active'] === 0) {
+                self::$cachedCheckResult = false;
+                self::$cachedUserId = $userId;
                 return false;
             }
         }
 
+        self::$cachedCheckResult = true;
+        self::$cachedUserId = $userId;
         return true;
     }
 
@@ -158,6 +222,8 @@ class AuthService implements AuthServiceInterface {
 
     public static function logout(): void {
         self::initSession();
+        self::$cachedCheckResult = null;
+        self::$cachedUserId = null;
         if (isset($_SESSION['user_id'])) {
             AuditLogger::log('LOGOUT', 'User logged out', $_SESSION['user_id']);
         }
