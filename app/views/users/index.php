@@ -508,6 +508,9 @@ require_once __DIR__ . '/../layouts/layout_start.php';
                     type: 'error'
                 });
             }
+        })
+        .catch(err => {
+            showSystemAlert({ title: 'Error', message: err.message, type: 'error' });
         });
     }
 
@@ -544,6 +547,9 @@ require_once __DIR__ . '/../layouts/layout_start.php';
                     type: 'error'
                 });
             }
+        })
+        .catch(err => {
+            showSystemAlert({ title: 'Error', message: err.message, type: 'error' });
         });
     }
 
@@ -579,6 +585,9 @@ require_once __DIR__ . '/../layouts/layout_start.php';
                     } else {
                         showSystemAlert({ title: 'Error', message: data.message, type: 'error' });
                     }
+                })
+                .catch(err => {
+                    showSystemAlert({ title: 'Error', message: err.message, type: 'error' });
                 });
             }
         });

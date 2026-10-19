@@ -94,4 +94,28 @@ class AuditLogDAO implements AuditLogDAOInterface {
             'currentPage' => $page
         ];
     }
+
+    public static function getExportLogs(?string $search = null, ?string $actionFilter = null): array {
+        $pdo = Database::getConnection();
+        $query = "
+            SELECT a.*, COALESCE(u.full_name, 'Departmental Audit') as faculty_display
+            FROM audit_logs a
+            LEFT JOIN users u ON a.target_id = u.id
+            WHERE 1=1
+        ";
+        $params = [];
+        if ($search && trim($search) !== '') {
+            $query .= " AND (a.details LIKE :s OR a.username LIKE :s OR a.ip_address LIKE :s OR a.action LIKE :s)";
+            $params[':s'] = "%" . trim($search) . "%";
+        }
+        if ($actionFilter && trim($actionFilter) !== '') {
+            $query .= " AND a.action = :act";
+            $params[':act'] = trim($actionFilter);
+        }
+        $query .= " ORDER BY a.created_at DESC";
+
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
 }

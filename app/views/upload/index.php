@@ -614,7 +614,6 @@ Upload a file above to extract metadata.</div>
 
     function handleStageClick(stageNum) {
         showStageInfo(stageNum);
-        openProgressModal();
     }
 
     function showStageInfo(stageNum) {
@@ -1294,6 +1293,7 @@ Upload a file above to extract metadata.</div>
 
             if (wrap.httpStatus === 409 || res.status === 'duplicate_detected') {
                 // Duplicate intercepted by server
+                closeProgressModal();
                 const dupBox = document.getElementById('duplicate-warning-box');
                 dupBox.classList.remove('hidden');
                 document.getElementById('duplicate-warning-title').textContent = 'Duplicate Document Policy Intercept';
@@ -1311,6 +1311,7 @@ Upload a file above to extract metadata.</div>
             }
 
             if (res.status === 'success') {
+                closeProgressModal();
                 updateModalProgress(100, `Stage 5: Archival complete & audit logged`);
                 updateModalStageBadges(5);
 

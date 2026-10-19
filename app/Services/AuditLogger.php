@@ -40,4 +40,8 @@ class AuditLogger {
     public static function getPaginatedLogs(?string $search = null, ?string $actionFilter = null, int $page = 1, int $perPage = 10): array {
         return AuditLogDAO::getPaginatedLogs($search, $actionFilter, $page, $perPage);
     }
+
+    public static function getExportLogs(?string $search = null, ?string $actionFilter = null): array {
+        return AuditLogDAO::getExportLogs($search, $actionFilter);
+    }
 }

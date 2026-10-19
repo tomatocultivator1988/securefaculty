@@ -110,7 +110,7 @@ require_once __DIR__ . '/../layouts/layout_start.php';
                        class="w-full pl-7 pr-3 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-all">
             </div>
 
-            <a href="export.php?format=csv"
+            <a href="audit_logs.php?format=csv<?= $actionFilter ? '&action=' . urlencode($actionFilter) : '' ?><?= $search ? '&search=' . urlencode($search) : '' ?>"
                class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
                 <i class="fa-solid fa-file-export text-xs"></i>
                 <span>Export Audit CSV</span>

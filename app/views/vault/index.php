@@ -393,7 +393,7 @@ require_once __DIR__ . '/../layouts/layout_start.php';
                                        title="Volatile Download">
                                         <i class="fa-solid fa-download"></i>
                                     </a>
-                                    <button type="button" onclick="confirmDelete(<?= $cert['id'] ?>, '<?= addslashes(htmlspecialchars($cert['title'])) ?>', <?= $isCoAuthor ? 'true' : 'false' ?>, '<?= addslashes(htmlspecialchars($cert['faculty_name'])) ?>')"
+                                    <button type="button" onclick="confirmDelete(<?= (int)$cert['id'] ?>, <?= htmlspecialchars(json_encode($cert['title']), ENT_QUOTES, 'UTF-8') ?>, <?= $isCoAuthor ? 'true' : 'false' ?>, <?= htmlspecialchars(json_encode($cert['faculty_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>)"
                                             class="p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-950/60 <?= $isCoAuthor ? 'text-purple-500 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300' : 'text-slate-400 hover:text-rose-600 dark:hover:text-rose-400' ?> transition-colors cursor-pointer"
                                             title="<?= $isCoAuthor ? 'Remove from My Vault (Disassociate Co-Authorship)' : 'Permanently Delete Record' ?>">
                                         <i class="<?= $isCoAuthor ? 'fa-solid fa-user-minus' : 'fa-regular fa-trash-can' ?>"></i>
@@ -525,7 +525,7 @@ require_once __DIR__ . '/../layouts/layout_start.php';
                             <i class="fa-solid fa-download"></i>
                         </a>
 
-                        <button type="button" onclick="confirmDelete(<?= $cert['id'] ?>, '<?= addslashes(htmlspecialchars($cert['title'])) ?>', <?= $isCoAuthor ? 'true' : 'false' ?>, '<?= addslashes(htmlspecialchars($cert['faculty_name'])) ?>')"
+                        <button type="button" onclick="confirmDelete(<?= (int)$cert['id'] ?>, <?= htmlspecialchars(json_encode($cert['title']), ENT_QUOTES, 'UTF-8') ?>, <?= $isCoAuthor ? 'true' : 'false' ?>, <?= htmlspecialchars(json_encode($cert['faculty_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>)"
                                 class="p-1.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/60 <?= $isCoAuthor ? 'text-purple-500 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300' : 'text-slate-400 hover:text-rose-600 dark:hover:text-rose-400' ?> transition-colors cursor-pointer"
                                 title="<?= $isCoAuthor ? 'Remove from My Vault (Disassociate Co-Authorship)' : 'Permanently Delete Record' ?>">
                             <i class="<?= $isCoAuthor ? 'fa-solid fa-user-minus' : 'fa-regular fa-trash-can' ?>"></i>
