@@ -532,6 +532,18 @@ async function sleep(ms) {
         });
         assert(certCsvRes.status === 200 && certCsvRes.contentType.includes('text/csv') && certCsvRes.hasHeader, "Accreditation CSV endpoint successfully streams official Excel dataset");
 
+        // Test Accreditation PDF Download Link
+        const certPdfRes = await page.evaluate(async () => {
+            const res = await fetch('export.php?format=pdf');
+            const blob = await res.blob();
+            return {
+                status: res.status,
+                contentType: res.headers.get('content-type'),
+                size: blob.size
+            };
+        });
+        assert(certPdfRes.status === 200 && certPdfRes.contentType.includes('application/pdf') && certPdfRes.size > 1000, `Accreditation PDF endpoint successfully streams publication-grade vector PDF (${certPdfRes.size} bytes)`);
+
         // -------------------------------------------------------------
         // SECTION 8: FACULTY WORKFLOW, ISOLATION & CO-AUTHOR ATTRIBUTION
         // -------------------------------------------------------------

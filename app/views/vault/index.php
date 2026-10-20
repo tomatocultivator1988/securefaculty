@@ -76,11 +76,11 @@ require_once __DIR__ . '/../layouts/layout_start.php';
             </a>
         </div>
 
-        <!-- Direct Link to Printable PDF Report -->
+        <!-- Direct Link to Accreditation Report & PDF -->
         <a href="export.php?category=<?= urlencode($category) ?>&search=<?= urlencode($search) ?>&date_from=<?= urlencode($dateFrom) ?>&date_to=<?= urlencode($dateTo) ?>&issued_year=<?= urlencode($issuedYear) ?><?= $isDean && $targetFacultyId ? '&faculty_id=' . $targetFacultyId : '' ?>"
            class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
-            <i class="fa-solid fa-print text-blue-600 dark:text-blue-400"></i>
-            <span>Printable PDF Report</span>
+            <i class="fa-solid fa-file-pdf text-rose-600 dark:text-rose-400"></i>
+            <span>Official Report &amp; PDF</span>
         </a>
 
         <a href="upload.php" class="px-3.5 py-1.5 bg-[#1da055] hover:bg-[#188c49] text-white rounded-lg font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">

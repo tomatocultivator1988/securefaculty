@@ -97,6 +97,55 @@ class ExportController extends BaseController {
             exit;
         }
 
+        // Dedicated PDF Document Export Handler
+        if ($format === 'pdf') {
+            $dateScope = 'All Validated Records';
+            if ($dateFrom || $dateTo) {
+                $dateScope = ($dateFrom ?: 'Beginning') . ' to ' . ($dateTo ?: 'Current');
+            } elseif ($issuedYear) {
+                $dateScope = 'Issued Year ' . $issuedYear;
+            }
+
+            $payload = [
+                'meta' => [
+                    'category' => $category,
+                    'date_scope' => $dateScope,
+                    'auditor_name' => $currentUser['full_name'],
+                    'generated_at' => date('F d, Y \a\t h:i A')
+                ],
+                'records' => $records
+            ];
+
+            $tempJson = TEMP_DIR . DIRECTORY_SEPARATOR . 'report_' . bin2hex(random_bytes(8)) . '.json';
+            $tempPdf = TEMP_DIR . DIRECTORY_SEPARATOR . 'report_' . bin2hex(random_bytes(8)) . '.pdf';
+            file_put_contents($tempJson, json_encode($payload));
+
+            $pythonBin = defined('PYTHON_BIN') ? PYTHON_BIN : 'python3';
+            $generatorScript = BASE_DIR . DIRECTORY_SEPARATOR . 'python_engine' . DIRECTORY_SEPARATOR . 'generate_report_pdf.py';
+
+            $cmd = sprintf(
+                '%s %s %s %s 2>&1',
+                escapeshellcmd($pythonBin),
+                escapeshellarg($generatorScript),
+                escapeshellarg($tempJson),
+                escapeshellarg($tempPdf)
+            );
+
+            shell_exec($cmd);
+            @unlink($tempJson);
+
+            if (file_exists($tempPdf) && filesize($tempPdf) > 0) {
+                $filename = "CICI_Accreditation_Ledger_" . ($category !== 'All' ? preg_replace('/[^a-zA-Z0-9]/', '_', $category) . "_" : "") . date('Ymd_His') . ".pdf";
+                header('Content-Type: application/pdf');
+                header('Content-Disposition: attachment; filename="' . $filename . '"');
+                header('Content-Length: ' . filesize($tempPdf));
+                readfile($tempPdf);
+                @unlink($tempPdf);
+                AuditLogger::log('EXPORT_REPORT', "Exported official PDF accreditation report (" . count($records) . " records)");
+                exit;
+            }
+        }
+
         // Render HTML Sheet View
         $this->renderView('export/index.php', [
             'currentUser' => $currentUser,

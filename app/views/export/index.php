@@ -16,23 +16,31 @@ require_once __DIR__ . '/../layouts/layout_start.php';
 <style>
     @media print {
         @page {
-            size: A4 portrait;
-            margin: 14mm 10mm 14mm 10mm;
+            size: A4 landscape;
+            margin: 8mm 10mm 10mm 10mm;
         }
-        header, aside, footer, #reportControls, #main-sidebar, nav, .no-print {
+        header, aside, footer, #reportControls, #main-sidebar, nav, .no-print, [onclick*="toggleSidebar"] {
             display: none !important;
         }
-        body {
+        html, body {
             background-color: #ffffff !important;
             color: #000000 !important;
-            font-size: 9.5pt !important;
+            font-size: 8.5pt !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            overflow: visible !important;
+            height: auto !important;
         }
         main {
             padding: 0 !important;
             margin: 0 !important;
             max-width: 100% !important;
+            overflow: visible !important;
+        }
+        .overflow-x-auto {
+            overflow: visible !important;
+            display: block !important;
+            width: 100% !important;
         }
         .report-sheet {
             background-color: #ffffff !important;
@@ -51,9 +59,10 @@ require_once __DIR__ . '/../layouts/layout_start.php';
             width: 100% !important;
             border-collapse: collapse !important;
             page-break-inside: auto !important;
+            table-layout: auto !important;
         }
         .report-sheet thead {
-            display: table-header-group !important; /* Repeats table header across pages! */
+            display: table-header-group !important; /* Repeats table header across pages */
         }
         .report-sheet thead tr {
             background-color: #f1f5f9 !important;
@@ -62,14 +71,16 @@ require_once __DIR__ . '/../layouts/layout_start.php';
             display: table-row-group !important;
         }
         .report-sheet tr {
-            page-break-inside: avoid !important; /* Avoids cutting rows awkwardly! */
+            page-break-inside: avoid !important;
             page-break-after: auto !important;
         }
         .report-sheet th, .report-sheet td {
-            border: 1px solid #cbd5e1 !important;
-            padding: 6px 8px !important;
+            border: 1px solid #94a3b8 !important;
+            padding: 5px 6px !important;
             color: #000000 !important;
             background-color: transparent !important;
+            font-size: 8pt !important;
+            word-break: break-word !important;
         }
         .print-signature-block {
             page-break-inside: avoid !important;
@@ -87,11 +98,16 @@ require_once __DIR__ . '/../layouts/layout_start.php';
             <h1 class="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">Institutional Records &amp; Accreditation Ledger</h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">AACCUP / CHED Compliance Audit Readiness &amp; Official Departmental Archive Report</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
             <a href="vault.php"
                class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all">
                 <i class="fa-solid fa-arrow-left"></i>
                 <span>Back to Vault</span>
+            </a>
+            <a href="export.php?format=pdf<?= $category !== 'All' ? '&category=' . urlencode($category) : '' ?><?= $search ? '&search=' . urlencode($search) : '' ?><?= $dateFrom ? '&date_from=' . urlencode($dateFrom) : '' ?><?= $dateTo ? '&date_to=' . urlencode($dateTo) : '' ?><?= $issuedYear ? '&issued_year=' . urlencode($issuedYear) : '' ?><?= !empty($rawIds) ? '&ids=' . urlencode($rawIds) : '' ?>"
+               class="px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
+                <i class="fa-solid fa-file-pdf text-sm"></i>
+                <span>Download PDF File</span>
             </a>
             <a href="export.php?format=csv<?= $category !== 'All' ? '&category=' . urlencode($category) : '' ?><?= $search ? '&search=' . urlencode($search) : '' ?><?= $dateFrom ? '&date_from=' . urlencode($dateFrom) : '' ?><?= $dateTo ? '&date_to=' . urlencode($dateTo) : '' ?><?= $issuedYear ? '&issued_year=' . urlencode($issuedYear) : '' ?><?= !empty($rawIds) ? '&ids=' . urlencode($rawIds) : '' ?>"
                class="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
@@ -101,7 +117,7 @@ require_once __DIR__ . '/../layouts/layout_start.php';
             <button onclick="window.print()"
                     class="px-4 py-2 rounded-lg bg-[#0d2342] hover:bg-[#14335e] text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
                 <i class="fa-solid fa-print text-sm"></i>
-                <span>Print Official Hardcopy / Save PDF</span>
+                <span>Print Sheet</span>
             </button>
         </div>
     </div>

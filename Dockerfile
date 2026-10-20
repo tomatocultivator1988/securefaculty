@@ -22,8 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && docker-php-ext-install -j$(nproc) pdo pdo_mysql gd zip \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Python Packages for Smart OCR Pipeline
-RUN pip3 install --no-cache-dir requests pillow pdf2image pytesseract --break-system-packages
+# 2. Install Python Packages for Smart OCR Pipeline & PDF Generation
+RUN pip3 install --no-cache-dir requests pillow pdf2image pytesseract reportlab --break-system-packages
 
 # 3. Configure Apache Modules & Custom Settings
 RUN a2enmod rewrite headers
