@@ -198,8 +198,12 @@ class CertificateDAO implements CertificateDAOInterface {
         }
 
         if ($search && trim($search) !== '') {
-            $sql .= " AND (c.title LIKE :search OR c.issuer LIKE :search OR c.ocr_raw_text LIKE :search OR c.cert_number LIKE :search)";
-            $params[':search'] = '%' . trim($search) . '%';
+            $sql .= " AND (c.title LIKE :s_title OR c.issuer LIKE :s_issuer OR c.ocr_raw_text LIKE :s_ocr OR c.cert_number LIKE :s_num)";
+            $term = '%' . trim($search) . '%';
+            $params[':s_title'] = $term;
+            $params[':s_issuer'] = $term;
+            $params[':s_ocr'] = $term;
+            $params[':s_num'] = $term;
         }
 
         if ($dateFrom && trim($dateFrom) !== '') {
@@ -263,8 +267,13 @@ class CertificateDAO implements CertificateDAOInterface {
         }
 
         if ($search && trim($search) !== '') {
-            $sql .= " AND (c.title LIKE :search OR c.issuer LIKE :search OR u.full_name LIKE :search OR c.ocr_raw_text LIKE :search OR c.cert_number LIKE :search)";
-            $params[':search'] = '%' . trim($search) . '%';
+            $sql .= " AND (c.title LIKE :s_title OR c.issuer LIKE :s_issuer OR u.full_name LIKE :s_name OR c.ocr_raw_text LIKE :s_ocr OR c.cert_number LIKE :s_num)";
+            $term = '%' . trim($search) . '%';
+            $params[':s_title'] = $term;
+            $params[':s_issuer'] = $term;
+            $params[':s_name'] = $term;
+            $params[':s_ocr'] = $term;
+            $params[':s_num'] = $term;
         }
 
         if ($dateFrom && trim($dateFrom) !== '') {

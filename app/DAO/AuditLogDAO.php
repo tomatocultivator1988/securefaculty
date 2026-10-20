@@ -48,8 +48,12 @@ class AuditLogDAO implements AuditLogDAOInterface {
         ";
         $params = [];
         if ($search && trim($search) !== '') {
-            $countQuery .= " AND (a.details LIKE :s OR a.username LIKE :s OR a.ip_address LIKE :s OR a.action LIKE :s)";
-            $params[':s'] = "%" . trim($search) . "%";
+            $countQuery .= " AND (a.details LIKE :s1 OR a.username LIKE :s2 OR a.ip_address LIKE :s3 OR a.action LIKE :s4)";
+            $term = "%" . trim($search) . "%";
+            $params[':s1'] = $term;
+            $params[':s2'] = $term;
+            $params[':s3'] = $term;
+            $params[':s4'] = $term;
         }
         if ($actionFilter && trim($actionFilter) !== '') {
             $countQuery .= " AND a.action = :act";
@@ -71,7 +75,7 @@ class AuditLogDAO implements AuditLogDAOInterface {
             WHERE 1=1
         ";
         if ($search && trim($search) !== '') {
-            $logQuery .= " AND (a.details LIKE :s OR a.username LIKE :s OR a.ip_address LIKE :s OR a.action LIKE :s)";
+            $logQuery .= " AND (a.details LIKE :s1 OR a.username LIKE :s2 OR a.ip_address LIKE :s3 OR a.action LIKE :s4)";
         }
         if ($actionFilter && trim($actionFilter) !== '') {
             $logQuery .= " AND a.action = :act";
@@ -105,8 +109,12 @@ class AuditLogDAO implements AuditLogDAOInterface {
         ";
         $params = [];
         if ($search && trim($search) !== '') {
-            $query .= " AND (a.details LIKE :s OR a.username LIKE :s OR a.ip_address LIKE :s OR a.action LIKE :s)";
-            $params[':s'] = "%" . trim($search) . "%";
+            $query .= " AND (a.details LIKE :s1 OR a.username LIKE :s2 OR a.ip_address LIKE :s3 OR a.action LIKE :s4)";
+            $term = "%" . trim($search) . "%";
+            $params[':s1'] = $term;
+            $params[':s2'] = $term;
+            $params[':s3'] = $term;
+            $params[':s4'] = $term;
         }
         if ($actionFilter && trim($actionFilter) !== '') {
             $query .= " AND a.action = :act";
