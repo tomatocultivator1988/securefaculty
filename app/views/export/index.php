@@ -16,8 +16,8 @@ require_once __DIR__ . '/../layouts/layout_start.php';
 <style>
     @media print {
         @page {
-            size: A4 landscape;
-            margin: 8mm 10mm 10mm 10mm;
+            size: A4 portrait;
+            margin: 8mm 6mm 10mm 6mm;
         }
         header, aside, footer, #reportControls, #main-sidebar, nav, .no-print, [onclick*="toggleSidebar"] {
             display: none !important;
@@ -25,17 +25,19 @@ require_once __DIR__ . '/../layouts/layout_start.php';
         html, body {
             background-color: #ffffff !important;
             color: #000000 !important;
-            font-size: 8.5pt !important;
+            font-size: 7.5pt !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             overflow: visible !important;
             height: auto !important;
+            width: 100% !important;
         }
         main {
             padding: 0 !important;
             margin: 0 !important;
             max-width: 100% !important;
             overflow: visible !important;
+            width: 100% !important;
         }
         .overflow-x-auto {
             overflow: visible !important;
@@ -76,11 +78,12 @@ require_once __DIR__ . '/../layouts/layout_start.php';
         }
         .report-sheet th, .report-sheet td {
             border: 1px solid #94a3b8 !important;
-            padding: 5px 6px !important;
+            padding: 3.5px 4.5px !important;
             color: #000000 !important;
             background-color: transparent !important;
-            font-size: 8pt !important;
+            font-size: 7.5pt !important;
             word-break: break-word !important;
+            overflow-wrap: break-word !important;
         }
         .print-signature-block {
             page-break-inside: avoid !important;

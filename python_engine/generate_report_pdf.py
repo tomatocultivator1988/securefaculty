@@ -56,14 +56,14 @@ class NumberedCanvas:
                 footer_text = f"SecureFaculty Institutional Records System  |  Page {self._pageNumber} of {page_count}"
                 confidential_text = "OFFICIAL TRANSMITTAL  •  RA 10173 COMPLIANT  •  ISUFST CICI"
                 
-                # Landscape A4 width is 841.89 pt, height is 595.27 pt
-                self.drawString(36, 22, confidential_text)
-                self.drawRightString(841.89 - 36, 22, footer_text)
+                # Portrait A4 width is 595.27 pt, height is 841.89 pt
+                self.drawString(24, 20, confidential_text)
+                self.drawRightString(595.27 - 24, 20, footer_text)
                 
                 # Thin divider rule above footer
                 self.setStrokeColor(colors.HexColor("#cbd5e1"))
                 self.setLineWidth(0.5)
-                self.line(36, 32, 841.89 - 36, 32)
+                self.line(24, 28, 595.27 - 24, 28)
                 
                 self.restoreState()
 
@@ -77,54 +77,54 @@ def generate_pdf(data_json_path, output_pdf_path):
     meta = payload.get('meta', {})
     records = payload.get('records', [])
 
-    # Page Setup: A4 Landscape (841.89 x 595.27 pt)
+    # Page Setup: A4 Portrait (595.27 x 841.89 pt)
     doc = SimpleDocTemplate(
         output_pdf_path,
-        pagesize=landscape(A4),
-        leftMargin=36,
-        rightMargin=36,
-        topMargin=28,
-        bottomMargin=42
+        pagesize=A4,
+        leftMargin=24,
+        rightMargin=24,
+        topMargin=24,
+        bottomMargin=36
     )
 
     styles = getSampleStyleSheet()
 
     # Typography Styles
-    title_sub = ParagraphStyle('RepSub', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=10, alignment=TA_CENTER, textColor=colors.HexColor("#64748b"))
-    title_main = ParagraphStyle('RepMain', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=13, leading=16, alignment=TA_CENTER, textColor=colors.HexColor("#0f172a"))
-    title_dept = ParagraphStyle('RepDept', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=13, alignment=TA_CENTER, textColor=colors.HexColor("#1e293b"))
-    title_addr = ParagraphStyle('RepAddr', parent=styles['Normal'], fontName='Helvetica', fontSize=7.5, leading=10, alignment=TA_CENTER, textColor=colors.HexColor("#64748b"))
+    title_sub = ParagraphStyle('RepSub', parent=styles['Normal'], fontName='Helvetica', fontSize=7.5, leading=9.5, alignment=TA_CENTER, textColor=colors.HexColor("#64748b"))
+    title_main = ParagraphStyle('RepMain', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=14, alignment=TA_CENTER, textColor=colors.HexColor("#0f172a"))
+    title_dept = ParagraphStyle('RepDept', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=12, alignment=TA_CENTER, textColor=colors.HexColor("#1e293b"))
+    title_addr = ParagraphStyle('RepAddr', parent=styles['Normal'], fontName='Helvetica', fontSize=7, leading=9, alignment=TA_CENTER, textColor=colors.HexColor("#64748b"))
 
-    ledger_title = ParagraphStyle('LedgerTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, leading=13, textColor=colors.HexColor("#0f172a"))
-    ledger_meta = ParagraphStyle('LedgerMeta', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, textColor=colors.HexColor("#334155"))
-    ledger_meta_r = ParagraphStyle('LedgerMetaR', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=11, alignment=TA_RIGHT, textColor=colors.HexColor("#334155"))
+    ledger_title = ParagraphStyle('LedgerTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=12, textColor=colors.HexColor("#0f172a"))
+    ledger_meta = ParagraphStyle('LedgerMeta', parent=styles['Normal'], fontName='Helvetica', fontSize=7.5, leading=10, textColor=colors.HexColor("#334155"))
+    ledger_meta_r = ParagraphStyle('LedgerMetaR', parent=styles['Normal'], fontName='Helvetica', fontSize=7.5, leading=10, alignment=TA_RIGHT, textColor=colors.HexColor("#334155"))
 
-    th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=7.5, leading=9.5, alignment=TA_CENTER, textColor=colors.HexColor("#0f172a"))
-    td_style = ParagraphStyle('TD', parent=styles['Normal'], fontName='Helvetica', fontSize=7.5, leading=10, textColor=colors.HexColor("#1e293b"))
-    td_bold = ParagraphStyle('TDBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, leading=10.5, textColor=colors.HexColor("#0f172a"))
-    td_center = ParagraphStyle('TDCenter', parent=styles['Normal'], fontName='Helvetica', fontSize=7.5, leading=10, alignment=TA_CENTER, textColor=colors.HexColor("#334155"))
-    td_badge = ParagraphStyle('TDBadge', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=7, leading=9, alignment=TA_CENTER, textColor=colors.HexColor("#1e40af"))
-    td_crypto = ParagraphStyle('TDCrypto', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=7, leading=9, alignment=TA_CENTER, textColor=colors.HexColor("#047857"))
+    th_style = ParagraphStyle('TH', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=6.8, leading=8.5, alignment=TA_CENTER, textColor=colors.HexColor("#0f172a"))
+    td_style = ParagraphStyle('TD', parent=styles['Normal'], fontName='Helvetica', fontSize=6.8, leading=8.5, textColor=colors.HexColor("#1e293b"))
+    td_bold = ParagraphStyle('TDBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=7, leading=9, textColor=colors.HexColor("#0f172a"))
+    td_center = ParagraphStyle('TDCenter', parent=styles['Normal'], fontName='Helvetica', fontSize=6.8, leading=8.5, alignment=TA_CENTER, textColor=colors.HexColor("#334155"))
+    td_badge = ParagraphStyle('TDBadge', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=6.5, leading=8, alignment=TA_CENTER, textColor=colors.HexColor("#1e40af"))
+    td_crypto = ParagraphStyle('TDCrypto', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=6.5, leading=8, alignment=TA_CENTER, textColor=colors.HexColor("#047857"))
 
     story = []
 
     # 1. Official Letterhead
     story.append(Paragraph("REPUBLIC OF THE PHILIPPINES", title_sub))
-    story.append(Spacer(1, 2))
+    story.append(Spacer(1, 1.5))
     story.append(Paragraph("ILOILO STATE UNIVERSITY OF FISHERIES SCIENCE AND TECHNOLOGY", title_main))
     story.append(Paragraph("COLLEGE OF INFORMATICS AND COMPUTING INNOVATIONS", title_dept))
     story.append(Paragraph("Main Campus – Poblacion Site, Barotac Nuevo, Iloilo  |  cici@isufst.edu.ph", title_addr))
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 5))
 
-    # Divider bar
-    divider = Table([['']], colWidths=[769.89], rowHeights=[1.5])
+    # Divider bar (547.27 pt)
+    divider = Table([['']], colWidths=[547.27], rowHeights=[1.5])
     divider.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#0d2342")),
         ('TOPPADDING', (0,0), (-1,-1), 0),
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(divider)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 5))
 
     # 2. Audit Scope & Metadata Header
     category_text = meta.get('category', 'All')
@@ -139,30 +139,29 @@ def generate_pdf(data_json_path, output_pdf_path):
             Paragraph(f"<b>Audited By:</b> {auditor}<br/><b>Generated:</b> {generated_at}<br/><b>Total Records:</b> {total_count}", ledger_meta_r)
         ]
     ]
-    meta_table = Table(header_data, colWidths=[450, 319.89])
+    meta_table = Table(header_data, colWidths=[310, 237.27])
     meta_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
         ('RIGHTPADDING', (0,0), (-1,-1), 0),
     ]))
     story.append(meta_table)
     story.append(Spacer(1, 4))
 
-    # 3. Main Data Table (Landscape Width = 769.89 pt)
-    # Columns: # (24), Title (210), Holder & Co-Authors (150), Ref No (80), Issued (65), Issuer (125), Category (65), Security (50) = 769 pt
-    col_widths = [24, 210, 150, 80, 65, 125, 65, 50.89]
+    # 3. Main Data Table (Portrait Width = 547.27 pt)
+    col_widths = [18, 142, 114, 50, 52, 80, 53, 38.27]
 
     table_data = [[
         Paragraph("<b>#</b>", th_style),
-        Paragraph("<b>DOCUMENT / CERTIFICATE TITLE</b>", th_style),
-        Paragraph("<b>CERTIFICATE HOLDER &amp; CO-AUTHORS</b>", th_style),
-        Paragraph("<b>CERT REF NO</b>", th_style),
-        Paragraph("<b>DATE ISSUED</b>", th_style),
+        Paragraph("<b>DOCUMENT TITLE</b>", th_style),
+        Paragraph("<b>HOLDER &amp; CO-AUTHORS</b>", th_style),
+        Paragraph("<b>CERT REF</b>", th_style),
+        Paragraph("<b>ISSUED</b>", th_style),
         Paragraph("<b>ISSUING AUTHORITY</b>", th_style),
         Paragraph("<b>CATEGORY</b>", th_style),
-        Paragraph("<b>INTEGRITY</b>", th_style),
+        Paragraph("<b>STATUS</b>", th_style),
     ]]
 
     if not records:
@@ -243,7 +242,7 @@ def generate_pdf(data_json_path, output_pdf_path):
             Paragraph("<b>REPUBLIC ACT NO. 10173</b><br/><font size=7 color='#64748b'>Philippine Data Privacy Act &amp; AACCUP Standard</font>", ledger_meta_r)
         ]
     ]
-    sig_table = Table(sig_data, colWidths=[384.94, 384.94])
+    sig_table = Table(sig_data, colWidths=[273.63, 273.64])
     sig_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
