@@ -14,7 +14,7 @@ class VaultController extends BaseController {
         $isDean = AuthService::isDean();
 
         // Handle single or bulk deletion with CSRF Protection
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['action'])) {
             $this->handleDelete($currentUser, $isDean);
             return;
         }

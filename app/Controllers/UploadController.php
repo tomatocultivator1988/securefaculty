@@ -31,7 +31,7 @@ class UploadController extends BaseController {
      * Handle multipart upload API endpoint
      */
     public function handleUploadApi(): void {
-        header('Content-Type: application/json');
+        if (!headers_sent()) header('Content-Type: application/json');
         AuthService::initSession();
         if (!AuthService::check()) {
             $this->jsonResponse(['status' => 'error', 'message' => 'Unauthorized session'], 401);
@@ -288,7 +288,7 @@ class UploadController extends BaseController {
      * Handle commit and encryption API endpoint
      */
     public function handleCommitApi(): void {
-        header('Content-Type: application/json');
+        if (!headers_sent()) header('Content-Type: application/json');
         AuthService::initSession();
         if (!AuthService::check()) {
             $this->jsonResponse(['status' => 'error', 'message' => 'Unauthorized session'], 401);
@@ -298,7 +298,7 @@ class UploadController extends BaseController {
             $this->jsonResponse(['status' => 'error', 'message' => 'Method not allowed'], 405);
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         if (!$input) {
             $this->jsonResponse(['status' => 'error', 'message' => 'Invalid JSON payload'], 400);
         }

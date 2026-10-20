@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SecureFaculty Official Accreditation Report PDF Generator
-Produces publication-grade, landscape vector PDF reports with institutional letterhead.
+Produces publication-grade, portrait vector PDF reports with institutional letterhead.
 """
 import sys
 import json
@@ -255,7 +255,6 @@ def generate_pdf(data_json_path, output_pdf_path):
 
     # Build Document with Running Headers/Footers
     doc.build(story, canvasmaker=NumberedCanvas.get_maker())
-    print(json.dumps({"status": "success", "file": output_pdf_path}))
 
 
 if __name__ == '__main__':
@@ -264,3 +263,4 @@ if __name__ == '__main__':
         sys.exit(1)
 
     generate_pdf(sys.argv[1], sys.argv[2])
+    print(json.dumps({"status": "success", "file": sys.argv[2]}))

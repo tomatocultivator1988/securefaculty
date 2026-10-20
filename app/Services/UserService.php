@@ -27,7 +27,8 @@ class UserService {
         }
 
         $newId = UserDAO::create($input);
-        AuditLogger::log('USER_CREATED', "New user account created: {$username} ({$input['role']})", $newId);
+        $role = $input['role'] ?? 'faculty';
+        AuditLogger::log('USER_CREATED', "New user account created: {$username} ({$role})", $newId);
 
         return ['success' => true, 'user_id' => $newId];
     }

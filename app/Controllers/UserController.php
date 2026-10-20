@@ -59,7 +59,7 @@ class UserController extends BaseController {
     }
 
     public function handleApi(): void {
-        header('Content-Type: application/json');
+        if (!headers_sent()) header('Content-Type: application/json');
         AuthService::initSession();
 
         if (!AuthService::check() || !AuthService::isDean()) {
