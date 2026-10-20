@@ -238,36 +238,67 @@ def optimize_image(image_path, max_dim=2200, max_bytes=4800000):
 
 
 def call_ocr_space_api(image_path, api_key="helloworld"):
-    """HTTPS Outbound Handshake to OCR.space API"""
+    """HTTPS Outbound Handshake to OCR.space API with automatic multi-key failover"""
     if requests is None:
         return None, "requests library not installed"
 
-    url = 'https://api.ocr.space/parse/image'
-    try:
-        with open(image_path, 'rb') as f:
-            payload = {
-                'apikey': api_key,
-                'language': 'eng',
-                'isOverlayRequired': False,
-                'detectOrientation': True,
-                'scale': True,
-                'OCREngine': 2 # Modern high accuracy engine
-            }
-            res = requests.post(url, files={'filename': f}, data=payload, timeout=20)
+    # Support comma-separated failover keys (e.g. "Primary_Key,Backup_Key")
+    if isinstance(api_key, str):
+        keys = [k.strip() for k in api_key.split(',') if k.strip()]
+    elif isinstance(api_key, (list, tuple)):
+        keys = [str(k).strip() for k in api_key if str(k).strip()]
+    else:
+        keys = ["helloworld"]
 
-            if res.status_code == 200:
-                data = res.json()
-                if data.get('IsErroredOnProcessing'):
-                    err = data.get('ErrorMessage', ['Processing error'])
-                    return None, str(err)
-                parsed_results = data.get('ParsedResults', [])
-                if parsed_results:
-                    return parsed_results[0].get('ParsedText', ''), None
-                return "", None
-            else:
-                return None, f"HTTP Error {res.status_code}: {res.text}"
-    except Exception as e:
-        return None, str(e)
+    if not keys:
+        keys = ["helloworld"]
+
+    url = 'https://api.ocr.space/parse/image'
+    last_error = None
+
+    for key in keys:
+        try:
+            with open(image_path, 'rb') as f:
+                payload = {
+                    'apikey': key,
+                    'language': 'eng',
+                    'isOverlayRequired': False,
+                    'detectOrientation': True,
+                    'scale': True,
+                    'OCREngine': 2 # Modern high accuracy engine
+                }
+                res = requests.post(url, files={'filename': f}, data=payload, timeout=20)
+
+                if res.status_code == 200:
+                    data = res.json()
+                    if data.get('IsErroredOnProcessing'):
+                        err = data.get('ErrorMessage', ['Processing error'])
+                        err_str = " ".join(err) if isinstance(err, list) else str(err)
+                        last_error = err_str
+                        # Check if error relates to rate limits, quotas, invalid keys, or busy servers
+                        err_lower = err_str.lower()
+                        if any(tok in err_lower for tok in ['limit', 'quota', 'e500', 'apikey', 'rate', 'exceeded', 'max', 'wait', 'throttled']):
+                            sys.stderr.write(f"OCR key {key[:5]}... reached rate limit/error ({err_str}). Failing over to backup key...\n")
+                            continue
+                        return None, err_str
+
+                    parsed_results = data.get('ParsedResults', [])
+                    if parsed_results:
+                        return parsed_results[0].get('ParsedText', ''), None
+                    return "", None
+
+                elif res.status_code in (403, 429, 500, 502, 503):
+                    last_error = f"HTTP {res.status_code}: {res.text}"
+                    sys.stderr.write(f"OCR key {key[:5]}... encountered {res.status_code}. Failing over to backup key...\n")
+                    continue
+                else:
+                    return None, f"HTTP Error {res.status_code}: {res.text}"
+        except Exception as e:
+            last_error = str(e)
+            sys.stderr.write(f"OCR key {key[:5]}... network exception: {e}. Failing over to backup key...\n")
+            continue
+
+    return None, f"All OCR keys exhausted. Last error: {last_error}"
 
 
 def process_document(file_path, api_key="helloworld"):

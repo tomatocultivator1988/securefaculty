@@ -37,8 +37,12 @@ define('AES_KEY_HEX', $envMasterKey ?: 'a4f89d38c114e590f23b7829a9041be5e8f49d21
 define('AES_CIPHER', 'aes-256-cbc');
 
 // OCR.space API Configuration
-// Free API key: 'K87899142388957' or 'helloworld'
-define('OCR_API_KEY', 'helloworld');
+// Primary: User's dedicated free key (25,000 monthly quota)
+define('OCR_PRIMARY_KEY', 'K85711929288957');
+// Backup: Evaluation key fallback if primary reaches quota or limit
+define('OCR_BACKUP_KEY', 'helloworld');
+// Combined failover chain passed to Python Conversion Gate (Primary -> Backup)
+define('OCR_API_KEY', OCR_PRIMARY_KEY . ',' . OCR_BACKUP_KEY);
 define('OCR_MONTHLY_QUOTA', 25000); // 25,000 monthly threshold as defined in Capstone document
 
 // Ensure critical directories exist
