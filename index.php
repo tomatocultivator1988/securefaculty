@@ -1,8 +1,7 @@
 <?php
 /**
- * Root Entry & Redirect for Apache / XAMPP Deployment
- * Automatically routes incoming browser traffic to the public/ application directory.
+ * Root Entry Point & Router for SecureFaculty
+ * Loads the public application without redirecting the browser URL.
  * SecureFaculty - CICI Department
  */
-header('Location: public/');
-exit;
+require_once __DIR__ . '/public/index.php';

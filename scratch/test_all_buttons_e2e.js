@@ -3,7 +3,7 @@ const http = require('http');
 const { execSync } = require('child_process');
 const path = require('path');
 
-const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1/securefaculty/public';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1/securefaculty';
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 let passed = 0;
@@ -97,7 +97,7 @@ async function sleep(ms) {
             page.waitForNavigation({ waitUntil: 'networkidle2' }),
             page.click('button[type="submit"]')
         ]);
-        assert(page.url().includes('dashboard.php'), "Dean login submits form and redirects to dashboard.php");
+        assert(page.url().includes('dashboard'), "Dean login submits form and redirects to dashboard");
 
         // -------------------------------------------------------------
         // SECTION 2: DEAN DASHBOARD & BUTTONS
@@ -114,14 +114,14 @@ async function sleep(ms) {
             page.waitForNavigation({ waitUntil: 'networkidle2' }),
             page.click('a[href="users.php"]')
         ]);
-        assert(page.url().includes('users.php'), "Dashboard 'User Management' button routes to users.php");
+        assert(page.url().includes('users'), "Dashboard 'User Management' button routes to users");
 
         await page.goBack({ waitUntil: 'networkidle2' });
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle2' }),
-            page.click('a[href="export.php"]')
+            page.click('a[href*="export"]')
         ]);
-        assert(page.url().includes('export.php'), "Dashboard 'Accreditation Report' button routes to export.php");
+        assert(page.url().includes('export'), "Dashboard 'Accreditation Report' button routes to export");
 
         await page.goBack({ waitUntil: 'networkidle2' });
 
@@ -146,7 +146,7 @@ async function sleep(ms) {
             page.waitForNavigation({ waitUntil: 'networkidle2' }),
             page.click('button[onclick="resetDashboardFilters()"]')
         ]);
-        assert(page.url().includes('dashboard.php'), "Reset Dashboard button cleanly resets filters and reloads page");
+        assert(page.url().includes('dashboard'), "Reset Dashboard button cleanly resets filters and reloads page");
 
         // -------------------------------------------------------------
         // SECTION 3: USER MANAGEMENT & FULL CRUD MODALS
@@ -546,7 +546,7 @@ async function sleep(ms) {
             page.waitForNavigation({ waitUntil: 'networkidle2' }),
             page.click('button[type="submit"]')
         ]);
-        assert(page.url().includes('vault.php'), "Faculty login directly routes to personal vault (vault.php)");
+        assert(page.url().includes('vault'), "Faculty login directly routes to personal vault");
 
         // Verify Faculty Sidebar: Admin items are locked with explicit Dean-only restrictions
         const sidebarText = await page.$eval('#main-sidebar', el => el.innerText);
@@ -559,17 +559,17 @@ async function sleep(ms) {
         await page.click('#alert-modal-button');
 
         // Verify Direct URL Access is Blocked (403 Forbidden)
-        const dashRes = await page.goto(`${BASE_URL}/dashboard.php`);
-        assert(dashRes.status() === 403, "Faculty directly navigating to dashboard.php receives HTTP 403 Forbidden");
+        const dashRes = await page.goto(`${BASE_URL}/dashboard`);
+        assert(dashRes.status() === 403, "Faculty directly navigating to dashboard receives HTTP 403 Forbidden");
 
-        const userRes = await page.goto(`${BASE_URL}/users.php`);
-        assert(userRes.status() === 403, "Faculty directly navigating to users.php receives HTTP 403 Forbidden");
+        const userRes = await page.goto(`${BASE_URL}/users`);
+        assert(userRes.status() === 403, "Faculty directly navigating to users receives HTTP 403 Forbidden");
 
-        const auditRes = await page.goto(`${BASE_URL}/audit_logs.php`);
-        assert(auditRes.status() === 403, "Faculty directly navigating to audit_logs.php receives HTTP 403 Forbidden");
+        const auditRes = await page.goto(`${BASE_URL}/audit_logs`);
+        assert(auditRes.status() === 403, "Faculty directly navigating to audit_logs receives HTTP 403 Forbidden");
 
         // Return to Faculty Vault & Inspect Co-Author Attribution
-        await page.goto(`${BASE_URL}/vault.php`, { waitUntil: 'networkidle2' });
+        await page.goto(`${BASE_URL}/vault`, { waitUntil: 'networkidle2' });
         const vaultBody = await page.$eval('main', el => el.innerText);
         assert(vaultBody.includes('Primary Author') || vaultBody.includes('Co-Author') || vaultBody.includes('Personal Digital Vault'), "Faculty Personal Vault renders clear attribution badges and co-author distinctions");
 
