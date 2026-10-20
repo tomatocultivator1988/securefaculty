@@ -41,7 +41,8 @@ COPY . /var/www/html
 # 7. Configure Permissions for Encrypted Vault & Temp Staging
 RUN mkdir -p /var/www/html/storage/vault /var/www/html/storage/temp \
  && chown -R www-data:www-data /var/www/html/storage \
- && chmod -R 775 /var/www/html/storage
+ && chmod -R 775 /var/www/html/storage \
+ && ln -sf /var/www/html /var/www/html/securefaculty
 
 # 8. Expose HTTP Port
 EXPOSE 80
