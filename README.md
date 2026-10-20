@@ -19,18 +19,57 @@ SecureFaculty is a web-based institutional records management portal engineered 
 
 ---
 
-## 🚀 Quick Start (Local Run)
+## 🚀 Deployment & Quick Start
 
-### Method 1: Instant Launch (Zero Setup)
-Simply double-click:
-```cmd
-start_securefaculty.bat
+### 🐳 Option A: 1-Command Docker Setup (Recommended for Any Computer / OS)
+Run on Windows, Mac, or Linux with zero configuration. Docker automatically provisions PHP 8.2, Apache, MariaDB, Python 3, Poppler, and Tesseract OCR.
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/tomatocultivator1988/securefaculty.git
+   cd securefaculty
+   ```
+2. **Start the containers:**
+   ```bash
+   docker compose up -d
+   ```
+3. **Open your browser:**
+   👉 **`http://localhost:8080/securefaculty/`** (or **`http://localhost:8080/`**)
+
+*To stop the containers:*
+```bash
+docker compose down
 ```
-or run:
-```cmd
-python run_server.py
+
+---
+
+### 🏛️ Option B: XAMPP Setup (Windows Local Machine)
+
+1. **Clone / Place Project into XAMPP `htdocs`:**
+   ```cmd
+   mklink /J "C:\xampp\htdocs\securefaculty" "C:\Panoy SSD\Secure"
+   ```
+   *(or copy the folder directly into `C:\xampp\htdocs\securefaculty`)*
+2. **Start Services:**
+   - Open **XAMPP Control Panel**
+   - Click **Start** on **Apache**
+   - Click **Start** on **MySQL**
+3. **Import Database Schema:**
+   - Open **phpMyAdmin** (`http://localhost/phpmyadmin`)
+   - Create database: `securefaculty_db`
+   - Import `sql/schema.sql` (pre-seeded with all default accounts, faculty profiles, and indexes)
+4. **Open your browser:**
+   👉 **`http://localhost/securefaculty/`**
+
+---
+
+### 💻 Option C: Standalone PHP CLI Built-in Server
+
+If testing without Apache or Docker, run the built-in router:
+```bash
+php -S 127.0.0.1:8000 router.php
 ```
-Then navigate to: **`http://localhost:8000`** in your browser.
+Access at: **`http://127.0.0.1:8000`**
 
 ---
 
@@ -39,7 +78,7 @@ Then navigate to: **`http://localhost:8000`** in your browser.
 | Role | Username | Password | Purpose |
 | :--- | :--- | :--- | :--- |
 | **Dean / Administrator** | `dean` | `admin123` | Institutional Quota Monitor, Master Archive, Audit Trail, Accreditation Export, User Governance |
-| **Faculty Member** | `mikhail` | `faculty123` | Personal Vault, Batch Ingestion, Milestone Tracking |
+| **Faculty Member** | `mikhail` | `faculty123` | Personal Vault, Batch Ingestion, Milestone Tracking, Co-Authorship |
 | **Faculty Member** | `raejan` | `faculty123` | Personal Vault & Ingestion |
 | **Faculty Member** | `eljay` | `faculty123` | Personal Vault & Ingestion |
 
@@ -91,13 +130,16 @@ Secure/
 
 ---
 
-## 🏛️ Deploying to XAMPP (for Campus Defense / Production)
+## 🌐 Clean Production URLs
 
-1. Copy this entire folder to `C:\xampp\htdocs\securefaculty`.
-2. Open **XAMPP Control Panel** and start **Apache** and **MySQL**.
-3. Open **phpMyAdmin** (`http://localhost/phpmyadmin`) and import `sql/schema.sql`.
-4. In `app/config.php`, change:
-   ```php
-   define('DB_DRIVER', 'mysql');
-   ```
-5. Access the portal at: **`http://localhost/securefaculty/public`**.
+The system utilizes an Apache `mod_rewrite` engine and standalone `router.php`, eliminating unsightly `.php` extensions and `/public/` subpaths:
+
+| Destination | Clean Production Route |
+| :--- | :--- |
+| **Authentication Portal** | `http://localhost/securefaculty/` |
+| **Dean's Overview Dashboard** | `http://localhost/securefaculty/dashboard` |
+| **Personal Vault & Ledger** | `http://localhost/securefaculty/vault` |
+| **Smart Ingestion Pipeline** | `http://localhost/securefaculty/upload` |
+| **User Management Registry** | `http://localhost/securefaculty/users` |
+| **Accreditation Export** | `http://localhost/securefaculty/export` |
+| **RA 10173 Audit Ledger** | `http://localhost/securefaculty/audit` |

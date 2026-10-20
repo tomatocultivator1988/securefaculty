@@ -18,17 +18,20 @@ define('TEMP_DIR', STORAGE_DIR . DIRECTORY_SEPARATOR . 'temp');
 define('PYTHON_ENGINE_PATH', BASE_DIR . DIRECTORY_SEPARATOR . 'python_engine' . DIRECTORY_SEPARATOR . 'conversion_gate.py');
 
 // Database Driver Configuration ('sqlite' or 'mysql')
-define('DB_DRIVER', 'mysql'); // Connected to XAMPP MySQL (securefaculty_db)
+define('DB_DRIVER', getenv('DB_DRIVER') ?: 'mysql'); // Connected to XAMPP MySQL or Docker MariaDB
 
 // SQLite Configuration
 define('SQLITE_PATH', STORAGE_DIR . DIRECTORY_SEPARATOR . 'securefaculty.sqlite');
 
-// MySQL Configuration (For XAMPP / Production)
-define('DB_HOST', 'localhost');
-define('DB_PORT', '3306');
-define('DB_NAME', 'securefaculty_db');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+// MySQL Configuration (For XAMPP / Docker / Production)
+define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_PORT', getenv('DB_PORT') ?: '3306');
+define('DB_NAME', getenv('DB_NAME') ?: 'securefaculty_db');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
+
+// Python Executable Binary
+define('PYTHON_BIN', getenv('PYTHON_BIN') ?: (PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3'));
 
 // Cryptographic Security (AES-256)
 // Key resolution priority: Environment variable SECUREFACULTY_MASTER_KEY -> config constant default

@@ -118,10 +118,31 @@ VALUES ('OCR_SPACE', 25000, 142, DATE_FORMAT(NOW(), '%Y-%m'))
 ON DUPLICATE KEY UPDATE `last_updated` = NOW();
 
 -- Seed Default Accounts (Bcrypt password hashes)
--- dean: admin123
--- faculty: faculty123
-INSERT INTO `users` (`username`, `password_hash`, `role`, `full_name`, `email`, `department`) VALUES
-('dean', '$2y$10$w9FpT5LzF.7pA0wNnB2QeeE7G8c1B5uX.aH6b0bT9dK3Z0uK0L6/G', 'dean', 'Dr. Arlene S. Poblador', 'dean.cici@isufst.edu.ph', 'CICI'),
-('mikhail', '$2y$10$7Z8V4T0q9jXy2K1w3P0e2eH6m7A4b8T9dK3Z0uK0L6/G2B5uX.aH6', 'faculty', 'Prof. Levy Mikhail B. Aguilar', 'mikhail.aguilar@isufst.edu.ph', 'CICI'),
-('raejan', '$2y$10$7Z8V4T0q9jXy2K1w3P0e2eH6m7A4b8T9dK3Z0uK0L6/G2B5uX.aH6', 'faculty', 'Prof. Rae Jan B. Corneja', 'raejan.corneja@isufst.edu.ph', 'CICI'),
-('eljay', '$2y$10$7Z8V4T0q9jXy2K1w3P0e2eH6m7A4b8T9dK3Z0uK0L6/G2B5uX.aH6', 'faculty', 'Prof. Eljay Muyco', 'eljay.muyco@isufst.edu.ph', 'CICI');
+-- dean / admin123
+-- mikhail, raejan, eljay / faculty123
+INSERT INTO `users` (`id`, `username`, `password_hash`, `role`, `full_name`, `email`, `department`) VALUES
+(1, 'dean', '$2y$10$bSEl36wxWz4FoKMMoM5gv.ZsnIEf89/gyF8w2Nnek3qodHgJoAiAm', 'dean', 'Dr. Arlene S. Poblador', 'dean.cici@isufst.edu.ph', 'CICI'),
+(2, 'mikhail', '$2y$10$3zS6HY3Q.5WAL3lKcs9UYObgpo6Cs/T/1Nua.dtaVxLWItDCA.j2O', 'faculty', 'Prof. Levy Mikhail B. Aguilar', 'mikhail.aguilar@isufst.edu.ph', 'CICI'),
+(3, 'raejan', '$2y$10$ZDvf1jW.J9c/BA/oAgbLqOSNFo1nKy0SnWex9jZsifMNEI.bghCJy', 'faculty', 'Prof. Rae Jan B. Corneja', 'raejan.corneja@isufst.edu.ph', 'CICI'),
+(4, 'eljay', '$2y$10$o4NFPjy2N2jth2ATjSra9.yqvJy/s7/fSbcH6zo0TKlZwJ.GD5DKm', 'faculty', 'Prof. Eljay Muyco', 'eljay.muyco@isufst.edu.ph', 'CICI')
+ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`);
+
+-- Seed Faculty Profiles
+INSERT INTO `faculty_profiles` (`user_id`, `employee_id`, `academic_rank`, `specialization`) VALUES
+(1, 'ISUFST-6438', 'Dean, CICI', 'Educational Management & IT Leadership'),
+(2, 'ISUFST-9597', 'Assistant Professor II', 'Information Security & Cloud Infrastructure'),
+(3, 'ISUFST-8969', 'Instructor I', 'Database Systems & Web Engineering'),
+(4, 'ISUFST-4305', 'Instructor I', 'Artificial Intelligence & Computer Vision')
+ON DUPLICATE KEY UPDATE `employee_id` = VALUES(`employee_id`);
+
+-- Seed Initial Research Publication (Co-Authored by Mikhail, Rae Jan, Eljay)
+INSERT INTO `certificates` (`id`, `faculty_id`, `title`, `issuer`, `date_issued`, `category`, `file_path`, `original_filename`, `file_type`, `file_size`, `ocr_confidence`, `status`) VALUES
+(1, 2, 'SECUREFACULTY: A SYSTEMATIC RECORDS MANAGEMENT PORTAL', 'Iloilo State University of Fisheries Science and Technology', '2026-09-25', 'Research Publication', 'sample_demo_cert.pdf', 'SecureFaculty_Capstone_Manuscript.pdf', 'pdf', 1048576, 0.98, 'approved')
+ON DUPLICATE KEY UPDATE `title` = VALUES(`title`);
+
+-- Seed Co-Author Mappings
+INSERT INTO `certificate_authors` (`id`, `certificate_id`, `user_id`) VALUES
+(1, 1, 2),
+(2, 1, 3),
+(3, 1, 4)
+ON DUPLICATE KEY UPDATE `user_id` = VALUES(`user_id`);

@@ -40,7 +40,7 @@ class UploadController extends BaseController {
         // Housekeeping: purge stale uncommitted staged files older than 1 hour
         CertificateService::purgeStaleTempFiles(3600);
 
-        $pythonBin = 'python';
+        $pythonBin = defined('PYTHON_BIN') ? PYTHON_BIN : 'python';
 
         // Check for multiple files upload (e.g. multi-page photo compilation)
         $isMultiple = isset($_FILES['files']) && is_array($_FILES['files']['name']) && count($_FILES['files']['name']) > 1;
