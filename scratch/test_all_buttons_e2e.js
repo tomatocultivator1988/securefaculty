@@ -3,7 +3,7 @@ const http = require('http');
 const { execSync } = require('child_process');
 const path = require('path');
 
-const BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1/securefaculty/public';
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 let passed = 0;
@@ -153,6 +153,11 @@ async function sleep(ms) {
         // -------------------------------------------------------------
         console.log("\n--- 3. Testing User Management Modals, Forms & Actions ---");
         await page.goto(`${BASE_URL}/users.php`, { waitUntil: 'networkidle2' });
+
+        // Ensure no lingering audit.tester from past aborted runs
+        try {
+            execSync('php -r "require \'app/bootstrap.php\'; Database::getConnection()->exec(\\"DELETE FROM users WHERE username = \'audit.tester\'\\");"', { cwd: path.resolve(__dirname, '..') });
+        } catch(e) {}
 
         // Open Create User Modal
         await page.click('button[onclick="openCreateUserModal()"]');
@@ -464,7 +469,7 @@ async function sleep(ms) {
 
         // Clean up committed demo sample certificate from database & vault
         try {
-            execSync(`php -r "require 'app/bootstrap.php'; \\$db = Database::getConnection(); \\$stmt = \\$db->query(\\"SELECT id, file_path FROM certificates WHERE title LIKE 'Certificate of Recognition - National Research Conference%'\\"); \\$rows = \\$stmt->fetchAll(PDO::FETCH_ASSOC); foreach(\\$rows as \\$r){ \\$db->exec('DELETE FROM certificates WHERE id = ' . \\$r['id']); @unlink('storage/certificates/' . \\$r['file_path']); }"`, { cwd: path.resolve(__dirname, '..') });
+            execSync('php scratch/cleanup_demo_cert.php', { cwd: path.resolve(__dirname, '..') });
             console.log("  [OK] Demo certificate cleaned up from database and vault storage");
         } catch (e) {
             console.warn("  [WARN] Demo certificate cleanup notice:", e.message);

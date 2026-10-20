@@ -18,7 +18,7 @@ define('TEMP_DIR', STORAGE_DIR . DIRECTORY_SEPARATOR . 'temp');
 define('PYTHON_ENGINE_PATH', BASE_DIR . DIRECTORY_SEPARATOR . 'python_engine' . DIRECTORY_SEPARATOR . 'conversion_gate.py');
 
 // Database Driver Configuration ('sqlite' or 'mysql')
-define('DB_DRIVER', 'sqlite'); // Default to sqlite for instant local execution without configuring MySQL
+define('DB_DRIVER', 'mysql'); // Connected to XAMPP MySQL (securefaculty_db)
 
 // SQLite Configuration
 define('SQLITE_PATH', STORAGE_DIR . DIRECTORY_SEPARATOR . 'securefaculty.sqlite');

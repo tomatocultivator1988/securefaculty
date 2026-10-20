@@ -1,0 +1,17 @@
+# SecureFaculty Apache Security & Entry Configuration
+# CICI Department - ISUFST Main Campus
+
+DirectoryIndex index.php public/index.php
+
+# Prevent directory listing
+Options -Indexes
+
+# Prevent direct HTTP access to core application and data directories
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^storage(/.*)?$ - [F,L]
+    RewriteRule ^app(/.*)?$ - [F,L]
+    RewriteRule ^sql(/.*)?$ - [F,L]
+    RewriteRule ^python_engine(/.*)?$ - [F,L]
+    RewriteRule ^scratch(/.*)?$ - [F,L]
+</IfModule>
