@@ -47,8 +47,10 @@ print("Server URL: http://localhost:8000")
 print("Press Ctrl+C to terminate the local server.")
 print("=" * 65)
 
-# Launch PHP built-in web server
-cmd = [php_exe, "-S", "127.0.0.1:8000", "-t", PUBLIC_DIR]
+ROUTER_FILE = os.path.join(BASE_DIR, 'router.php')
+
+# Launch PHP built-in web server with clean URL routing
+cmd = [php_exe, "-S", "127.0.0.1:8000", ROUTER_FILE]
 try:
     subprocess.run(cmd)
 except KeyboardInterrupt:
