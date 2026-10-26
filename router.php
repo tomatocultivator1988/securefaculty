@@ -27,14 +27,40 @@ if ($uri === '' || $uri === '/') {
 // Target path inside public directory
 $publicPath = __DIR__ . '/public' . $uri;
 
-// 1. If static file exists directly in public (css, js, images, etc.)
-if (is_file($publicPath)) {
-    return false; // Let PHP built-in server handle static asset
+// 1. Direct .php file in public (e.g. /login.php, /vault.php)
+if (is_file($publicPath) && pathinfo($publicPath, PATHINFO_EXTENSION) === 'php') {
+    require $publicPath;
+    return true;
 }
 
-// 2. Direct .php file in public (e.g. /dashboard.php)
+// 2. Clean route extensionless .php match (e.g. /dashboard -> /public/dashboard.php)
 if (is_file($publicPath . '.php')) {
     require $publicPath . '.php';
+    return true;
+}
+
+// 3. Static asset files (CSS, JS, images, fonts)
+if (is_file($publicPath)) {
+    $ext = strtolower(pathinfo($publicPath, PATHINFO_EXTENSION));
+    $mimes = [
+        'css'   => 'text/css',
+        'js'    => 'application/javascript',
+        'png'   => 'image/png',
+        'jpg'   => 'image/jpeg',
+        'jpeg'  => 'image/jpeg',
+        'gif'   => 'image/gif',
+        'svg'   => 'image/svg+xml',
+        'ico'   => 'image/x-icon',
+        'pdf'   => 'application/pdf',
+        'woff2' => 'font/woff2',
+        'woff'  => 'font/woff',
+        'ttf'   => 'font/ttf',
+    ];
+    if (isset($mimes[$ext])) {
+        header('Content-Type: ' . $mimes[$ext]);
+    }
+    header('Content-Length: ' . filesize($publicPath));
+    readfile($publicPath);
     return true;
 }
 
