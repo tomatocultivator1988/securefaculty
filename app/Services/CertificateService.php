@@ -34,6 +34,11 @@ class CertificateService {
             ? (int)$input['assigned_faculty_id']
             : $requestingUserId;
 
+        // Validate assigned faculty exists
+        if (!UserDAO::find($assignedFacultyId)) {
+            return ['success' => false, 'code' => 400, 'message' => 'Specified faculty member does not exist in registry.'];
+        }
+
         $vaultFilename = bin2hex(random_bytes(16)) . '.enc';
         $vaultFilePath = VAULT_DIR . DIRECTORY_SEPARATOR . $vaultFilename;
 
@@ -44,33 +49,56 @@ class CertificateService {
         // Clean up temporary plaintext staged file (Zero plaintext persistence)
         @unlink($tempFilePath);
 
+        // Validate co-authors to prevent foreign key integrity violations
         $coAuthorIds = [];
         if (!empty($input['co_authors']) && is_array($input['co_authors'])) {
-            $coAuthorIds = array_map('intval', $input['co_authors']);
+            $candidateIds = array_filter(array_map('intval', $input['co_authors']), fn($cid) => $cid > 0 && $cid !== $assignedFacultyId);
+            if (!empty($candidateIds)) {
+                $pdo = Database::getConnection();
+                $inHolders = implode(',', array_fill(0, count($candidateIds), '?'));
+                $vStmt = $pdo->prepare("SELECT id FROM users WHERE id IN ($inHolders)");
+                $vStmt->execute($candidateIds);
+                $coAuthorIds = $vStmt->fetchAll(PDO::FETCH_COLUMN);
+            }
         }
 
         $normalizedDate = CertificateModel::normalizeDate($input['date_issued'] ?? null);
 
+        // String clamping to prevent column truncation
+        $title = mb_substr(trim($input['title'] ?? 'Untitled Document'), 0, 255);
+        if ($title === '') {
+            $title = 'Untitled Document';
+        }
+        $issuer = mb_substr(trim($input['issuer'] ?? 'Not Specified'), 0, 255);
+        $category = mb_substr(trim($input['category'] ?? 'Seminar'), 0, 100);
+        $certNumber = !empty($input['cert_number']) ? mb_substr(trim($input['cert_number']), 0, 100) : null;
+        $originalFilename = mb_substr(basename($input['original_name'] ?? 'certificate.pdf'), 0, 255);
+
         $certData = [
             'faculty_id' => $assignedFacultyId,
-            'title' => trim($input['title'] ?? 'Untitled Document'),
-            'issuer' => trim($input['issuer'] ?? 'Not Specified'),
+            'title' => $title,
+            'issuer' => $issuer,
             'date_issued' => $normalizedDate,
-            'category' => $input['category'] ?? 'Seminar',
+            'category' => $category,
             'file_path' => $vaultFilename,
-            'original_filename' => $input['original_name'] ?? 'certificate.pdf',
-            'file_type' => strtolower(pathinfo($input['original_name'] ?? 'pdf', PATHINFO_EXTENSION)),
+            'original_filename' => $originalFilename,
+            'file_type' => strtolower(pathinfo($originalFilename, PATHINFO_EXTENSION)),
             'file_size' => filesize($vaultFilePath),
             'ocr_raw_text' => $input['raw_text'] ?? '',
             'ocr_confidence' => floatval($input['confidence'] ?? 0.95),
             'status' => 'approved',
             'file_hash' => $fileHash,
-            'cert_number' => !empty($input['cert_number']) ? trim($input['cert_number']) : null,
+            'cert_number' => $certNumber,
             'processing_status' => 'completed',
             'batch_id' => $input['batch_id'] ?? null
         ];
 
-        $certId = CertificateDAO::create($certData, $coAuthorIds);
+        try {
+            $certId = CertificateDAO::create($certData, $coAuthorIds);
+        } catch (Throwable $e) {
+            AuditLogger::log('COMMIT_ERROR', "Failed to commit certificate: " . $e->getMessage(), $assignedFacultyId);
+            return ['success' => false, 'code' => 500, 'message' => 'Database commit failure: ' . $e->getMessage()];
+        }
 
         AuditLogger::log('COMMIT_VAULT_RECORD', "Approved and AES-256 encrypted certificate #{$certId}: '{$certData['title']}'", $certId);
 

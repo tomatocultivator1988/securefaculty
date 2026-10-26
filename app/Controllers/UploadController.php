@@ -109,6 +109,9 @@ class UploadController extends BaseController {
                     'page_count' => $result['page_count'] ?? $count,
                     'ocr_used' => $result['ocr_used'] ?? false
                 ]);
+            } else {
+                $errMsg = $result['message'] ?? 'Conversion Gate failed to compile multi-page image upload';
+                $this->jsonResponse(['status' => 'error', 'message' => $errMsg], 400);
             }
         }
 
@@ -331,8 +334,23 @@ class UploadController extends BaseController {
             ? (int)($input['assigned_faculty_id'] ?? $input['faculty_id'])
             : $currentUser['id'];
 
+        // Validate assigned faculty exists to prevent foreign key integrity failure
+        if (!UserModel::find($assignedFacultyId)) {
+            $this->jsonResponse(['status' => 'error', 'message' => 'Specified faculty member does not exist in registry.'], 400);
+        }
+
         // Normalize authentic certificate date
         $normalizedDate = !empty($input['date_issued']) ? CertificateModel::normalizeDate($input['date_issued']) : null;
+
+        // Safe string clamping to prevent database column truncation crashes (VARCHAR boundaries)
+        $title = mb_substr(trim($input['title'] ?? 'Untitled Document'), 0, 255);
+        if ($title === '') {
+            $title = 'Untitled Document';
+        }
+        $issuer = mb_substr(trim($input['issuer'] ?? 'Not Specified'), 0, 255);
+        $category = mb_substr(trim($input['category'] ?? 'Seminar'), 0, 100);
+        $certNumber = !empty($input['cert_number']) ? mb_substr(trim($input['cert_number']), 0, 100) : null;
+        $originalFilename = mb_substr(basename($input['original_name'] ?? 'certificate.pdf'), 0, 255);
 
         // Strict Duplicate Pre-Commit Interception (OWASP A04 / Integrity Assurance)
         $forceDuplicate = !empty($input['force_duplicate']);
@@ -346,7 +364,7 @@ class UploadController extends BaseController {
             }
 
             if (!empty($input['title']) && $normalizedDate !== null) {
-                $sameRecord = CertificateModel::findDuplicateByTitleAndDate($assignedFacultyId, trim($input['title']), $normalizedDate);
+                $sameRecord = CertificateModel::findDuplicateByTitleAndDate($assignedFacultyId, $title, $normalizedDate);
                 if ($sameRecord) {
                     $this->jsonResponse([
                         'status' => 'duplicate_detected',
@@ -373,31 +391,44 @@ class UploadController extends BaseController {
             }
         }
 
+        // Validate co-authors to prevent foreign key integrity violations
         $coAuthorIds = [];
         if (!empty($input['co_authors']) && is_array($input['co_authors'])) {
-            $coAuthorIds = array_map('intval', $input['co_authors']);
+            $candidateIds = array_filter(array_map('intval', $input['co_authors']), fn($cid) => $cid > 0 && $cid !== $assignedFacultyId);
+            if (!empty($candidateIds)) {
+                $pdo = Database::getConnection();
+                $inHolders = implode(',', array_fill(0, count($candidateIds), '?'));
+                $vStmt = $pdo->prepare("SELECT id FROM users WHERE id IN ($inHolders)");
+                $vStmt->execute($candidateIds);
+                $coAuthorIds = $vStmt->fetchAll(PDO::FETCH_COLUMN);
+            }
         }
 
         $certData = [
             'faculty_id' => $assignedFacultyId,
-            'title' => trim($input['title'] ?? 'Untitled Document'),
-            'issuer' => trim($input['issuer'] ?? 'Not Specified'),
+            'title' => $title,
+            'issuer' => $issuer,
             'date_issued' => $normalizedDate,
-            'category' => $input['category'] ?? 'Seminar',
+            'category' => $category,
             'file_path' => $vaultFilename,
-            'original_filename' => $input['original_name'] ?? 'certificate.pdf',
-            'file_type' => strtolower(pathinfo($input['original_name'] ?? 'pdf', PATHINFO_EXTENSION)),
+            'original_filename' => $originalFilename,
+            'file_type' => strtolower(pathinfo($originalFilename, PATHINFO_EXTENSION)),
             'file_size' => filesize($vaultFilePath),
             'ocr_raw_text' => $input['raw_text'] ?? '',
             'ocr_confidence' => floatval($input['confidence'] ?? 0.95),
             'status' => 'approved',
             'file_hash' => $fileHash,
-            'cert_number' => !empty($input['cert_number']) ? trim($input['cert_number']) : null,
+            'cert_number' => $certNumber,
             'processing_status' => 'completed',
             'batch_id' => $input['batch_id'] ?? null
         ];
 
-        $certId = CertificateModel::create($certData, $coAuthorIds);
+        try {
+            $certId = CertificateModel::create($certData, $coAuthorIds);
+        } catch (Throwable $e) {
+            AuditLogger::log('COMMIT_ERROR', "Failed to commit certificate: " . $e->getMessage(), $assignedFacultyId);
+            $this->jsonResponse(['status' => 'error', 'message' => 'Database commit failure: ' . $e->getMessage()], 500);
+        }
 
         AuditLogger::log('COMMIT_VAULT_RECORD', "Approved and AES-256 encrypted certificate #{$certId}: '{$certData['title']}'", $certId);
 

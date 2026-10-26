@@ -94,19 +94,26 @@ class UserDAO implements UserDAOInterface {
     public static function create(array $data): int {
         $pdo = Database::getConnection();
         $hash = password_hash($data['password'], PASSWORD_BCRYPT);
-        $role = in_array($data['role'] ?? '', ['dean', 'faculty']) ? $data['role'] : 'faculty';
+        $role = in_array($data['role'] ?? '', ['dean', 'faculty'], true) ? $data['role'] : 'faculty';
+        $username = mb_substr(trim($data['username'] ?? ''), 0, 64);
+        $fullName = mb_substr(trim($data['full_name'] ?? 'Faculty Member'), 0, 150);
+        $email = !empty($data['email']) ? mb_substr(trim($data['email']), 0, 150) : null;
+        $department = mb_substr(trim($data['department'] ?? 'CICI'), 0, 100);
+        $employeeId = mb_substr(trim($data['employee_id'] ?? ('ISUFST-' . rand(1000, 9999))), 0, 50);
+        $academicRank = mb_substr(trim($data['academic_rank'] ?? 'Instructor I'), 0, 100);
+        $specialization = mb_substr(trim($data['specialization'] ?? ''), 0, 150);
 
         $stmt = $pdo->prepare("
             INSERT INTO users (username, password_hash, role, full_name, email, department, is_active)
             VALUES (?, ?, ?, ?, ?, ?, 1)
         ");
         $stmt->execute([
-            $data['username'],
+            $username,
             $hash,
             $role,
-            $data['full_name'],
-            $data['email'] ?? null,
-            $data['department'] ?? 'CICI'
+            $fullName,
+            $email,
+            $department
         ]);
 
         $userId = (int)$pdo->lastInsertId();
@@ -117,9 +124,9 @@ class UserDAO implements UserDAOInterface {
         ");
         $pStmt->execute([
             $userId,
-            $data['employee_id'] ?? ('ISUFST-' . rand(1000, 9999)),
-            $data['academic_rank'] ?? 'Instructor I',
-            $data['specialization'] ?? ''
+            $employeeId,
+            $academicRank,
+            $specialization
         ]);
 
         return $userId;
@@ -154,12 +161,33 @@ class UserDAO implements UserDAOInterface {
         return $stmt->execute([$hash, $id]);
     }
 
-    public static function updateProfile(int $id, array $data): bool {
+    public static function updateProfile(int $id, array $data, ?int $currentUserId = null): bool {
         $pdo = Database::getConnection();
         $user = self::find($id);
         if (!$user) {
             return false;
         }
+
+        $newRole = in_array($data['role'] ?? '', ['dean', 'faculty'], true) ? $data['role'] : $user['role'];
+
+        // Self-demotion guard: Dean cannot demote their own active administrative clearance
+        if ($currentUserId !== null && $id === $currentUserId && $user['role'] === 'dean' && $newRole === 'faculty') {
+            return false;
+        }
+
+        // Sole Dean guard: Cannot demote the last remaining active Dean
+        if ($user['role'] === 'dean' && $newRole === 'faculty') {
+            $deanCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'dean' AND (is_active = 1 OR is_active IS NULL) AND id != " . (int)$id)->fetchColumn();
+            if ($deanCount === 0) {
+                return false;
+            }
+        }
+
+        $fullName = !empty($data['full_name']) ? mb_substr(trim($data['full_name']), 0, 150) : $user['full_name'];
+        $email = array_key_exists('email', $data) ? (!empty($data['email']) ? mb_substr(trim($data['email']), 0, 150) : null) : $user['email'];
+        $employeeId = mb_substr(trim($data['employee_id'] ?? $user['employee_id'] ?? ''), 0, 50);
+        $academicRank = mb_substr(trim($data['academic_rank'] ?? $user['academic_rank'] ?? ''), 0, 100);
+        $specialization = mb_substr(trim($data['specialization'] ?? $user['specialization'] ?? ''), 0, 150);
 
         $stmt = $pdo->prepare("
             UPDATE users 
@@ -167,9 +195,9 @@ class UserDAO implements UserDAOInterface {
             WHERE id = ?
         ");
         $stmt->execute([
-            $data['full_name'] ?? $user['full_name'],
-            $data['email'] ?? $user['email'],
-            $data['role'] ?? $user['role'],
+            $fullName,
+            $email,
+            $newRole,
             $id
         ]);
 
@@ -184,9 +212,9 @@ class UserDAO implements UserDAOInterface {
                 WHERE user_id = ?
             ");
             $pStmt->execute([
-                $data['employee_id'] ?? '',
-                $data['academic_rank'] ?? '',
-                $data['specialization'] ?? '',
+                $employeeId,
+                $academicRank,
+                $specialization,
                 $id
             ]);
         } else {
@@ -196,9 +224,9 @@ class UserDAO implements UserDAOInterface {
             ");
             $pStmt->execute([
                 $id,
-                $data['employee_id'] ?? ('ISUFST-' . rand(1000, 9999)),
-                $data['academic_rank'] ?? 'Instructor I',
-                $data['specialization'] ?? ''
+                $employeeId,
+                $academicRank,
+                $specialization
             ]);
         }
 

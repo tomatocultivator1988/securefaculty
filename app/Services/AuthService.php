@@ -52,13 +52,19 @@ class AuthService implements AuthServiceInterface {
         self::$cachedCheckResult = null;
         self::$cachedUserId = null;
 
+        $trimmedUser = trim($username);
+        if (empty($trimmedUser) || strlen($trimmedUser) > 64) {
+            $_SESSION['login_error'] = 'invalid_credentials';
+            return false;
+        }
+
         $now = time();
         $throttle = $_SESSION['login_throttle'] ?? ['count' => 0, 'last_time' => $now, 'locked_until' => 0];
 
         // Check active lockout (5-minute pause after 5 consecutive failures)
         if (!empty($throttle['locked_until']) && $throttle['locked_until'] > $now) {
             $remaining = $throttle['locked_until'] - $now;
-            AuditLogger::log('LOGIN_RATE_LIMITED', "Rate limited login attempt for: " . htmlspecialchars($username) . " ({$remaining}s remaining)");
+            AuditLogger::log('LOGIN_RATE_LIMITED', "Rate limited login attempt for: " . htmlspecialchars($trimmedUser) . " ({$remaining}s remaining)");
             $_SESSION['login_error'] = 'rate_limited';
             return false;
         }
@@ -69,15 +75,17 @@ class AuthService implements AuthServiceInterface {
         }
 
         // Check username-targeted brute-force threshold (5 failures within 5 minutes)
+        // Neutralize SQL LIKE wildcard characters to prevent wildcard brute-force bypass/denial-of-service
         $pdo = Database::getConnection();
         try {
             $fiveMinsAgo = date('Y-m-d H:i:s', $now - 300);
-            $userPattern = '%username: ' . trim($username) . '%';
+            $escapedUsername = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $trimmedUser);
+            $userPattern = '%username: ' . $escapedUsername . '%';
             $stmtUser = $pdo->prepare("SELECT COUNT(*) FROM audit_logs WHERE action IN ('LOGIN_FAILED', 'LOGIN_RATE_LIMITED', 'BRUTE_FORCE_LOCKOUT') AND details LIKE ? AND created_at >= ?");
             $stmtUser->execute([$userPattern, $fiveMinsAgo]);
             $userFailCount = (int)$stmtUser->fetchColumn();
             if ($userFailCount >= 5) {
-                AuditLogger::log('LOGIN_RATE_LIMITED', "Target account brute-force protection engaged ({$userFailCount} failures in 5m): " . htmlspecialchars($username));
+                AuditLogger::log('LOGIN_RATE_LIMITED', "Target account brute-force protection engaged ({$userFailCount} failures in 5m): " . htmlspecialchars($trimmedUser));
                 $_SESSION['login_error'] = 'rate_limited';
                 return false;
             }
@@ -85,7 +93,7 @@ class AuthService implements AuthServiceInterface {
             // Non-blocking fallback
         }
         $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
-        $stmt->execute([trim($username)]);
+        $stmt->execute([$trimmedUser]);
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password_hash'])) {

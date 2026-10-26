@@ -392,8 +392,16 @@ class CertificateDAO implements CertificateDAOInterface {
 
     public static function incrementQuota(): void {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare("UPDATE api_quotas SET current_usage = current_usage + 1, last_updated = CURRENT_TIMESTAMP WHERE service_name = 'OCR_SPACE'");
-        $stmt->execute();
+        $check = $pdo->prepare("SELECT id FROM api_quotas WHERE service_name = 'OCR_SPACE'");
+        $check->execute();
+        if ($check->fetch()) {
+            $stmt = $pdo->prepare("UPDATE api_quotas SET current_usage = current_usage + 1, last_updated = CURRENT_TIMESTAMP WHERE service_name = 'OCR_SPACE'");
+            $stmt->execute();
+        } else {
+            $limit = defined('OCR_MONTHLY_QUOTA') ? OCR_MONTHLY_QUOTA : 25000;
+            $ins = $pdo->prepare("INSERT INTO api_quotas (service_name, monthly_limit, current_usage, month_year) VALUES ('OCR_SPACE', ?, 1, ?)");
+            $ins->execute([$limit, date('Y-m')]);
+        }
     }
 
     public static function getDepartmentMetrics(): array {

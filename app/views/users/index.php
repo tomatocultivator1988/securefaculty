@@ -132,7 +132,7 @@ require_once __DIR__ . '/../layouts/layout_start.php';
                             <td class="p-3">
                                 <div class="flex items-center gap-2.5">
                                     <div class="w-8 h-8 rounded-full <?= $u['role'] === 'dean' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300' ?> flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-inner">
-                                        <?= strtoupper(substr($u['full_name'], 0, 1)) ?>
+                                        <?= htmlspecialchars(mb_strtoupper(mb_substr($u['full_name'] ?? 'U', 0, 1, 'UTF-8')), ENT_QUOTES, 'UTF-8') ?>
                                     </div>
                                     <div>
                                         <strong class="text-slate-900 dark:text-slate-100 block"><?= htmlspecialchars($u['full_name']) ?></strong>
@@ -403,7 +403,15 @@ require_once __DIR__ . '/../layouts/layout_start.php';
         document.getElementById('edit_user_id').value = user.id;
         document.getElementById('edit_fullname').value = user.full_name || '';
         document.getElementById('edit_email').value = user.email || '';
-        document.getElementById('edit_role').value = user.role || 'faculty';
+        const roleSelect = document.getElementById('edit_role');
+        roleSelect.value = user.role || 'faculty';
+        if (parseInt(user.id) === <?= (int)$currentUser['id'] ?>) {
+            roleSelect.disabled = true;
+            roleSelect.title = 'Self-demotion is restricted to protect administrative access';
+        } else {
+            roleSelect.disabled = false;
+            roleSelect.title = '';
+        }
         document.getElementById('edit_empid').value = user.employee_id || '';
         document.getElementById('edit_rank').value = user.academic_rank || '';
         document.getElementById('edit_spec').value = user.specialization || '';

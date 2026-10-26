@@ -12,6 +12,8 @@ class AuthServiceTest extends TestCase {
         parent::setUp();
         AuthService::initSession();
         $_SESSION = [];
+        $pdo = Database::getConnection();
+        $pdo->exec("DELETE FROM audit_logs WHERE action IN ('LOGIN_FAILED', 'LOGIN_RATE_LIMITED', 'BRUTE_FORCE_LOCKOUT')");
     }
 
     public function tearDown(): void {

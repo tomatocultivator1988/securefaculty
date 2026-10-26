@@ -243,6 +243,62 @@ assertTest("Open-ended upper bound (date_from only) executes successfully", is_a
 $openLowerBound = CertificateDAO::getAll('All', null, null, null, '2030-12-31');
 assertTest("Open-ended lower bound (date_to only) executes successfully", is_array($openLowerBound));
 
+// -----------------------------------------------------------------------------
+// 7. INPUT VALIDATION & DEFENSIVE BUSINESS LOGIC GUARDS
+// -----------------------------------------------------------------------------
+echo "\n[7] Input Validation & Defensive Business Logic Guards:\n";
+
+// Self-role demotion guard
+if ($deanUser) {
+    $demoteSelf = UserService::updateProfile($deanUser['id'], ['full_name' => $deanUser['full_name'], 'role' => 'faculty'], $deanUser['id']);
+    assertTest("Self-role demotion guard: Dean cannot demote themselves to faculty", !$demoteSelf['success']);
+
+    $demoteDao = UserDAO::updateProfile($deanUser['id'], ['role' => 'faculty'], $deanUser['id']);
+    assertTest("DAO-level self-demotion guard: Rejects self-demotion directly", !$demoteDao);
+}
+
+// Invalid username format validation
+$invalidUserRes = UserService::create([
+    'username' => 'invalid user!@#',
+    'password' => 'validPass123',
+    'full_name' => 'Test User'
+]);
+assertTest("Username regex constraint: Rejects spaces and illegal characters", !$invalidUserRes['success']);
+
+// Short username (< 3 chars)
+$shortUserRes = UserService::create([
+    'username' => 'ab',
+    'password' => 'validPass123',
+    'full_name' => 'Test User'
+]);
+assertTest("Username length constraint: Rejects usernames shorter than 3 characters", !$shortUserRes['success']);
+
+// Invalid email validation
+$invalidEmailRes = UserService::create([
+    'username' => 'valid_user_' . rand(100, 999),
+    'password' => 'validPass123',
+    'full_name' => 'Test User',
+    'email' => 'not-an-email-address'
+]);
+assertTest("Email syntax validation: Rejects malformed email string", !$invalidEmailRes['success']);
+
+// Password exceeding 128 characters (DoS prevention)
+$excessivePassRes = UserService::create([
+    'username' => 'valid_user_' . rand(100, 999),
+    'password' => str_repeat('a', 129),
+    'full_name' => 'Test User'
+]);
+assertTest("Password upper bound: Rejects passwords > 128 characters", !$excessivePassRes['success']);
+
+// Reset password for non-existent user
+$nonExistentReset = UserService::resetPassword(999999, 'newPassword123');
+assertTest("Reset password guard: Rejects password reset for non-existent user ID", !$nonExistentReset['success']);
+
+// API Quota increment auto-seeding
+CertificateDAO::incrementQuota();
+$quotaStatus = CertificateDAO::getQuotaStatus();
+assertTest("Quota status active & incremented successfully", $quotaStatus['current_usage'] > 0);
+
 echo "\n========================================================================\n";
 echo "AUDIT SUMMARY: {$passCount}/{$totalCount} TESTS PASSED (" . round(($passCount / $totalCount) * 100, 1) . "%)\n";
 echo "========================================================================\n";

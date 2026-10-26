@@ -13,21 +13,33 @@ class UserService {
         $username = trim($input['username'] ?? '');
         $password = trim($input['password'] ?? '');
         $fullName = trim($input['full_name'] ?? '');
+        $email = trim($input['email'] ?? '');
 
         if (empty($username) || empty($password) || empty($fullName)) {
             return ['success' => false, 'code' => 400, 'message' => 'Username, full name, and initial password are required.'];
         }
 
-        if (strlen($password) < 6) {
-            return ['success' => false, 'code' => 400, 'message' => 'Password must be at least 6 characters.'];
+        // Validate username formatting (alphanumeric, dot, underscore, hyphen, 3-32 characters)
+        if (!preg_match('/^[a-zA-Z0-9._-]{3,32}$/', $username)) {
+            return ['success' => false, 'code' => 400, 'message' => 'Username must be between 3 and 32 characters and contain only letters, numbers, dots, underscores, or hyphens.'];
+        }
+
+        if (strlen($password) < 6 || strlen($password) > 128) {
+            return ['success' => false, 'code' => 400, 'message' => 'Password must be between 6 and 128 characters.'];
+        }
+
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'code' => 400, 'message' => 'Invalid email address format.'];
         }
 
         if (UserDAO::findByUsername($username)) {
             return ['success' => false, 'code' => 409, 'message' => 'Username already registered.'];
         }
 
+        $role = in_array($input['role'] ?? '', ['dean', 'faculty'], true) ? $input['role'] : 'faculty';
+        $input['role'] = $role;
+
         $newId = UserDAO::create($input);
-        $role = $input['role'] ?? 'faculty';
         AuditLogger::log('USER_CREATED', "New user account created: {$username} ({$role})", $newId);
 
         return ['success' => true, 'user_id' => $newId];
@@ -43,9 +55,43 @@ class UserService {
         return ['success' => true, 'is_active' => $res['is_active']];
     }
 
+    public static function updateProfile(int $userId, array $input, int $currentUserId): array {
+        $user = UserDAO::find($userId);
+        if (!$user) {
+            return ['success' => false, 'code' => 404, 'message' => 'User not found.'];
+        }
+
+        $fullName = trim($input['full_name'] ?? '');
+        if (empty($fullName)) {
+            return ['success' => false, 'code' => 400, 'message' => 'Full name cannot be empty.'];
+        }
+
+        $email = trim($input['email'] ?? '');
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'code' => 400, 'message' => 'Invalid email address format.'];
+        }
+
+        // Self-demotion guard
+        if ($userId === $currentUserId && ($user['role'] ?? '') === 'dean' && isset($input['role']) && $input['role'] !== 'dean') {
+            return ['success' => false, 'code' => 400, 'message' => 'Cannot demote your own administrator account.'];
+        }
+
+        $ok = UserDAO::updateProfile($userId, $input, $currentUserId);
+        if (!$ok) {
+            return ['success' => false, 'code' => 400, 'message' => 'Failed to update profile or cannot demote sole remaining administrator.'];
+        }
+
+        AuditLogger::log('USER_PROFILE_UPDATED', "Updated profile for user ID #{$userId}", $userId);
+        return ['success' => true, 'message' => 'User profile updated successfully'];
+    }
+
     public static function resetPassword(int $userId, string $newPassword): array {
-        if (strlen($newPassword) < 6) {
-            return ['success' => false, 'code' => 400, 'message' => 'Password must be at least 6 characters.'];
+        if (!UserDAO::find($userId)) {
+            return ['success' => false, 'code' => 404, 'message' => 'Target user does not exist.'];
+        }
+
+        if (strlen($newPassword) < 6 || strlen($newPassword) > 128) {
+            return ['success' => false, 'code' => 400, 'message' => 'Password must be between 6 and 128 characters.'];
         }
 
         UserDAO::resetPassword($userId, $newPassword);

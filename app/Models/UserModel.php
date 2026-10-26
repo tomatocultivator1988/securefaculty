@@ -52,8 +52,8 @@ class UserModel {
         return UserDAO::resetPassword($id, $newPassword);
     }
 
-    public static function updateProfile(int $id, array $data): bool {
-        return UserDAO::updateProfile($id, $data);
+    public static function updateProfile(int $id, array $data, ?int $currentUserId = null): bool {
+        return UserDAO::updateProfile($id, $data, $currentUserId);
     }
 
     public static function delete(int $id, int $currentUserId): array {

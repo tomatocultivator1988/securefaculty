@@ -20,7 +20,9 @@ abstract class BaseController {
         if (file_exists($fullPath)) {
             require $fullPath;
         } else {
-            http_response_code(500);
+            if (!headers_sent()) {
+                http_response_code(500);
+            }
             echo "View file not found: " . htmlspecialchars($viewFile);
         }
     }

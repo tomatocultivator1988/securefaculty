@@ -131,7 +131,7 @@ class ExportController extends BaseController {
                 escapeshellarg($tempPdf)
             );
 
-            shell_exec($cmd);
+            $cmdOutput = shell_exec($cmd);
             @unlink($tempJson);
 
             if (file_exists($tempPdf) && filesize($tempPdf) > 0) {
@@ -142,6 +142,19 @@ class ExportController extends BaseController {
                 readfile($tempPdf);
                 @unlink($tempPdf);
                 AuditLogger::log('EXPORT_REPORT', "Exported official PDF accreditation report (" . count($records) . " records)");
+                exit;
+            } else {
+                $errMsg = !empty($cmdOutput) ? trim($cmdOutput) : 'ReportLab PDF compilation failed';
+                AuditLogger::log('EXPORT_ERROR', "Accreditation PDF compilation failed: " . mb_substr($errMsg, 0, 200));
+                if (!headers_sent()) {
+                    http_response_code(500);
+                }
+                echo "<div style='font-family:sans-serif;max-width:600px;margin:40px auto;padding:24px;border:1px solid #f87171;border-radius:12px;background:#fef2f2;color:#991b1b;'>";
+                echo "<h3 style='margin-top:0;'>Official PDF Generation Failed</h3>";
+                echo "<p>The Python PDF report generator was unable to render the official ledger document.</p>";
+                echo "<pre style='background:#fee2e2;padding:12px;border-radius:8px;overflow-x:auto;font-size:11px;'>" . htmlspecialchars($errMsg) . "</pre>";
+                echo "<p><a href='export.php' style='color:#b91c1c;font-weight:bold;'>&larr; Return to Ledger View</a></p>";
+                echo "</div>";
                 exit;
             }
         }
